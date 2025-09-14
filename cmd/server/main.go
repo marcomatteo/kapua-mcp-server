@@ -84,6 +84,32 @@ func runServer(cfg *config.Config, url string) {
 		Description: "List Kapua IoT devices",
 	}, kapuaHandler.HandleListDevices)
 
+	// Add Kapua device create/update/delete tools
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "kapua-create-device",
+		Description: "Create a new Kapua device",
+	}, kapuaHandler.HandleCreateDevice)
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "kapua-update-device",
+		Description: "Update an existing Kapua device",
+	}, kapuaHandler.HandleUpdateDevice)
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "kapua-delete-device",
+		Description: "Delete a Kapua device",
+	}, kapuaHandler.HandleDeleteDevice)
+
+	// Register Kapua resources so clients can discover and read them
+	server.AddResource(&mcp.Resource{
+		URI:         "kapua://devices",
+		Name:        "Kapua Devices",
+		Description: "Live list of Kapua IoT devices",
+		MIMEType:    "application/json",
+	}, func(ctx context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {
+		return kapuaHandler.ReadResource(ctx, req.Params.URI)
+	})
+
 	// Create the streamable HTTP handler.
 	handler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server {
 		return server
@@ -93,8 +119,13 @@ func runServer(cfg *config.Config, url string) {
 
 	logger.Info("MCP server listening on %s", url)
 	logger.Info("Kapua API endpoint: %s", cfg.Kapua.APIEndpoint)
-	logger.Info("Available Kapua device management tool:")
+	logger.Info("Available Kapua device management tools:")
 	logger.Info("  - kapua-list-devices: List IoT devices in Kapua with filtering options.")
+	logger.Info("  - kapua-create-device: Create a new device")
+	logger.Info("  - kapua-update-device: Update an existing device")
+	logger.Info("  - kapua-delete-device: Delete a device")
+    logger.Info("Available Kapua resources:")
+    logger.Info("  - kapua://devices (application/json)")
 
 	// Start the HTTP server with logging handler.
 	if err := http.ListenAndServe(url, handlerWithLogging); err != nil {

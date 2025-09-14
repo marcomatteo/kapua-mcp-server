@@ -89,36 +89,63 @@ func (c *KapuaClient) isTokenExpiringSoon() bool {
 	return time.Until(c.tokenExpiry) < 5*time.Minute
 }
 
-// refreshTokenIfNeeded automatically refreshes the token if it's expiring soon
+// refreshTokenIfNeeded refreshes an access token when expiring soon or already expired.
+// If already expired and the refresh token is also expired, it falls back to QuickAuthenticate.
 func (c *KapuaClient) refreshTokenIfNeeded(ctx context.Context) error {
-	if !c.autoRefresh || !c.isTokenExpiringSoon() {
-		return nil
-	}
+    if !c.autoRefresh {
+        return nil
+    }
 
-	c.tokenMutex.RLock()
-	refreshToken := c.refreshToken
-	tokenID := c.token
-	c.tokenMutex.RUnlock()
+    // Snapshot token timings and values without holding the lock during I/O
+    c.tokenMutex.RLock()
+    tokenExpiry := c.tokenExpiry
+    refreshExpiry := c.refreshExpiry
+    refreshToken := c.refreshToken
+    tokenID := c.token
+    c.tokenMutex.RUnlock()
 
-	if refreshToken == "" {
-		c.logger.Warn("Token expiring soon but no refresh token available")
-		return fmt.Errorf("no refresh token available for automatic refresh")
-	}
+    if tokenExpiry.IsZero() {
+        // No expiry known; nothing to do
+        return nil
+    }
 
-	c.logger.Info("Token expiring soon, attempting automatic refresh")
-	request := models.RefreshTokenRequest{
-		RefreshToken: refreshToken,
-		TokenID:      tokenID,
-	}
+    now := time.Now()
+    expiringSoon := time.Until(tokenExpiry) < 5*time.Minute
+    expired := now.After(tokenExpiry)
+    if !expiringSoon && !expired {
+        return nil
+    }
 
-	_, err := c.RefreshToken(ctx, request)
-	if err != nil {
-		c.logger.Error("Automatic token refresh failed: %v", err)
-		return err
-	}
+    // If already expired, ensure refresh token is still valid; otherwise re-authenticate
+    if expired {
+        if refreshToken == "" {
+            c.logger.Warn("Access token expired and no refresh token available; performing full re-authentication")
+            _, err := c.QuickAuthenticate(ctx)
+            return err
+        }
+        if refreshExpiry.IsZero() || now.After(refreshExpiry) {
+            c.logger.Info("Refresh token expired; performing full re-authentication")
+            _, err := c.QuickAuthenticate(ctx)
+            return err
+        }
+        // else: refresh token still valid; proceed to refresh below
+        c.logger.Info("Access token expired; attempting automatic refresh")
+    } else {
+        c.logger.Info("Token expiring soon, attempting automatic refresh")
+    }
 
-	c.logger.Info("Token automatically refreshed successfully")
-	return nil
+    // Attempt refresh with current refresh token
+    request := models.RefreshTokenRequest{
+        RefreshToken: refreshToken,
+        TokenID:      tokenID,
+    }
+    _, err := c.RefreshToken(ctx, request)
+    if err != nil {
+        c.logger.Error("Automatic token refresh failed: %v", err)
+        return err
+    }
+    c.logger.Info("Token automatically refreshed successfully")
+    return nil
 }
 
 // makeRequest performs an HTTP request to the Kapua API
