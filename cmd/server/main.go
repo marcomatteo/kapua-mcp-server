@@ -128,7 +128,7 @@ func runServer(url string) {
 		return server
 	}, nil)
 
-	handlerWithLogging := loggingHandler(handler)
+	handlerWithLogging := LoggingHandler(handler)
 
 	log.Printf("MCP server listening on %s", url)
 	log.Printf("Available tool: cityTime (cities: nyc, sf, boston)")

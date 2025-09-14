@@ -5,17 +5,17 @@ VERSION := 0.1.0
 
 .PHONY: run build clean test lint help
 
+.PHONY: run
 run:
-	docker run \
-	--rm \
-	-p 8080:8080 \
-	$(APP):$(VERSION)
+	./bin/$(APP) server
 
+.PHONY: build
 build:
-	docker build -f Dockerfile -t $(APP):$(VERSION) .
+	GO111MODULE=on go build -o bin/$(APP) ./cmd/server
 
+.PHONY: clean
 clean:
-	docker rmi $(APP):$(VERSION) || true
+	rm -rf bin/*
 
 # test:
 # 	go test ./...
@@ -30,7 +30,5 @@ help:
 	@echo "  make               - Build and run"
 	@echo "  make build         - Build for current platform"
 	@echo "  make clean         - Clean build outputs"
-	@echo "  make test          - Run tests"
-	@echo "  make lint          - Run linter"
-	@echo "  make run		    - Run the application in a Docker container"
+	@echo "  make run		    - Run the application"
 	@echo "  make help          - Show this help information"
