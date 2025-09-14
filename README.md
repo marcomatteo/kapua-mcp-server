@@ -12,12 +12,20 @@ kapua-mcp-server/
 ├── internal/
 │   ├── config/
 │   │   └── config.go               # Configuration loading from env/.venv
-│   ├── handlers/
-│   │   └── kapua.go                # MCP tool + resource handlers (Kapua)
-│   ├── models/
-│   │   └── kapua.go                # Kapua and auth data models
-│   └── services/
-│       └── kapua_client.go         # Kapua REST API client + auth/refresh logic
+│   └── kapua/
+│       ├── handlers/
+│       │   ├── kapua.go            # Common MCP resource plumbing
+│       │   ├── devices.go          # Device tools (list/update/delete)
+│       │   └── devices_configurations.go # Configuration tools
+│       ├── models/
+│       │   ├── devices.go          # Device structs, list results
+│       │   ├── devices_configuration.go  # Component configuration schemas
+│       │   └── authentication.go   # Auth models
+│       └── services/
+│           ├── kapua_client.go     # HTTP client + auth/refresh
+│           ├── authentication.go   # /authentication endpoints
+│           ├── devices.go          # /{scopeId}/devices endpoints
+│           └── devices_configurations.go # /devices/{deviceId}/configurations
 ├── pkg/
 │   └── utils/
 │       └── logger.go               # Structured logging helper
@@ -59,24 +67,25 @@ Server listens on `host:port` (defaults: `localhost:8000`).
 
 ## MCP Tools and Resources
 - Tool: `kapua-list-devices`
-  - Lists devices within the authenticated Kapua scope (scope is derived from the access token)
+  - Lists devices within the authenticated Kapua scope (derived from the access token)
   - Parameters: `clientId`, `status`, `matchTerm`, `limit`, `offset`
-  - Backed by Kapua API: `GET /{scopeId}/devices`
-
-- Tool: `kapua-create-device`
-  - Creates a new device in the authenticated scope
-  - Parameters: `device` (DeviceCreator payload)
-  - Backed by Kapua API: `POST /{scopeId}/devices`
+  - API: `GET /{scopeId}/devices`
 
 - Tool: `kapua-update-device`
   - Updates an existing device in the authenticated scope
   - Parameters: `deviceId`, `device` (Device payload)
-  - Backed by Kapua API: `PUT /{scopeId}/devices/{deviceId}`
+  - API: `PUT /{scopeId}/devices/{deviceId}`
 
 - Tool: `kapua-delete-device`
   - Deletes a device in the authenticated scope
   - Parameters: `deviceId`
-  - Backed by Kapua API: `DELETE /{scopeId}/devices/{deviceId}`
+  - API: `DELETE /{scopeId}/devices/{deviceId}`
+
+- Tool: `kapua-configurations-read`
+  - Reads all component configurations for a device
+  - Parameters: `deviceId` (object input: `{ "deviceId": "..." }`)
+  - Returns: typed `DeviceConfiguration` JSON (component configurations)
+  - API: `GET /{scopeId}/devices/{deviceId}/configurations`
 
 - Resource: `kapua://devices`
   - Registered and discoverable via MCP `resources/list`
@@ -94,3 +103,4 @@ The Kapua REST API surface used by this server is documented in `specs/kapua_ope
 
 ## Notes
 - Docker files and extra scripts are not included yet; the Makefile builds a local binary.
+ - MCP tool inputs must be JSON objects; even single-value inputs are wrapped (e.g., `{ "deviceId": "..." }`).

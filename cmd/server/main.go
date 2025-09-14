@@ -16,8 +16,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"kapua-mcp-server/internal/config"
-	"kapua-mcp-server/internal/handlers"
-	"kapua-mcp-server/internal/services"
+	"kapua-mcp-server/internal/kapua/handlers"
+	"kapua-mcp-server/internal/kapua/services"
 	"kapua-mcp-server/pkg/utils"
 )
 
@@ -84,12 +84,6 @@ func runServer(cfg *config.Config, url string) {
 		Description: "List Kapua IoT devices",
 	}, kapuaHandler.HandleListDevices)
 
-	// Add Kapua device create/update/delete tools
-	mcp.AddTool(server, &mcp.Tool{
-		Name:        "kapua-create-device",
-		Description: "Create a new Kapua device",
-	}, kapuaHandler.HandleCreateDevice)
-
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "kapua-update-device",
 		Description: "Update an existing Kapua device",
@@ -99,6 +93,12 @@ func runServer(cfg *config.Config, url string) {
 		Name:        "kapua-delete-device",
 		Description: "Delete a Kapua device",
 	}, kapuaHandler.HandleDeleteDevice)
+
+	// Kapua device configurations (read all)
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "kapua-configurations-read",
+		Description: "Read all configurations for a Kapua device (input: {id})",
+	}, kapuaHandler.HandleDeviceConfigurationsRead)
 
 	// Register Kapua resources so clients can discover and read them
 	server.AddResource(&mcp.Resource{
@@ -119,13 +119,11 @@ func runServer(cfg *config.Config, url string) {
 
 	logger.Info("MCP server listening on %s", url)
 	logger.Info("Kapua API endpoint: %s", cfg.Kapua.APIEndpoint)
-	logger.Info("Available Kapua device management tools:")
+	logger.Info("Available Kapua tools:")
 	logger.Info("  - kapua-list-devices: List IoT devices in Kapua with filtering options.")
-	logger.Info("  - kapua-create-device: Create a new device")
-	logger.Info("  - kapua-update-device: Update an existing device")
+	logger.Info("  - kapua-update-device: Update an existing Kapua device")
 	logger.Info("  - kapua-delete-device: Delete a device")
-    logger.Info("Available Kapua resources:")
-    logger.Info("  - kapua://devices (application/json)")
+	logger.Info("  - kapua-configurations-read: Read all configurations for a device")
 
 	// Start the HTTP server with logging handler.
 	if err := http.ListenAndServe(url, handlerWithLogging); err != nil {
