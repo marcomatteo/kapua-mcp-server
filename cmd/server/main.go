@@ -80,9 +80,9 @@ func runServer(cfg *config.Config, url string) {
 
 	// Add Kapua device management tool
 	mcp.AddTool(server, &mcp.Tool{
-		Name:        "kapua-device-management",
-		Description: "Manage Kapua IoT devices - list, get, create, update, and delete devices",
-	}, kapuaHandler.HandleDeviceManagement)
+		Name:        "kapua-list-devices",
+		Description: "List Kapua IoT devices",
+	}, kapuaHandler.HandleListDevices)
 
 	// Create the streamable HTTP handler.
 	handler := mcp.NewStreamableHTTPHandler(func(req *http.Request) *mcp.Server {
@@ -94,12 +94,7 @@ func runServer(cfg *config.Config, url string) {
 	logger.Info("MCP server listening on %s", url)
 	logger.Info("Kapua API endpoint: %s", cfg.Kapua.APIEndpoint)
 	logger.Info("Available Kapua device management tool:")
-	logger.Info("  - kapua-device-management: Comprehensive device management operations")
-	logger.Info("    * list: List devices with optional filters")
-	logger.Info("    * get: Get detailed device information")
-	logger.Info("    * create: Create a new device")
-	logger.Info("    * update: Update device properties")
-	logger.Info("    * delete: Delete a device")
+	logger.Info("  - kapua-list-devices: List IoT devices in Kapua with filtering options.")
 
 	// Start the HTTP server with logging handler.
 	if err := http.ListenAndServe(url, handlerWithLogging); err != nil {

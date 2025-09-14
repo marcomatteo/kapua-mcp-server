@@ -29,6 +29,7 @@ type KapuaClient struct {
 	refreshExpiry time.Time    // Refresh token expiration time
 	tokenMutex    sync.RWMutex // Protects token-related fields
 	autoRefresh   bool         // Enable automatic token refresh
+	scopeId       string       // Default scope ID for account operations
 }
 
 // NewKapuaClient creates a new Kapua API client
@@ -66,6 +67,7 @@ func (c *KapuaClient) SetTokenInfo(accessToken *models.AccessToken) {
 	c.tokenExpiry = accessToken.ExpiresOn
 	c.refreshToken = accessToken.RefreshToken
 	c.refreshExpiry = accessToken.RefreshExpiresOn
+	c.scopeId = accessToken.ScopeID.String()
 	c.logger.Debug("Token information updated - expires: %v, refresh expires: %v",
 		c.tokenExpiry.Format(time.RFC3339), c.refreshExpiry.Format(time.RFC3339))
 }
@@ -344,8 +346,8 @@ func (c *KapuaClient) QuickAuthenticate(ctx context.Context) (*models.AccessToke
 // Device Management Methods
 
 // ListDevices retrieves a list of devices from a scope
-func (c *KapuaClient) ListDevices(ctx context.Context, scopeID string, params map[string]string) (*models.DeviceListResult, error) {
-	c.logger.Info("Listing devices for scope: %s", scopeID)
+func (c *KapuaClient) ListDevices(ctx context.Context, params map[string]string) (*models.DeviceListResult, error) {
+	c.logger.Info("Listing devices for scope: %s", c.scopeId)
 
 	// Build query parameters
 	queryParams := url.Values{}
@@ -355,7 +357,7 @@ func (c *KapuaClient) ListDevices(ctx context.Context, scopeID string, params ma
 		}
 	}
 
-	endpoint := fmt.Sprintf("/%s/devices", scopeID)
+	endpoint := fmt.Sprintf("/%s/devices", c.scopeId)
 	if len(queryParams) > 0 {
 		endpoint += "?" + queryParams.Encode()
 	}
@@ -375,10 +377,10 @@ func (c *KapuaClient) ListDevices(ctx context.Context, scopeID string, params ma
 }
 
 // GetDevice retrieves a specific device by ID
-func (c *KapuaClient) GetDevice(ctx context.Context, scopeID, deviceID string) (*models.Device, error) {
-	c.logger.Info("Getting device %s from scope: %s", deviceID, scopeID)
+func (c *KapuaClient) GetDevice(ctx context.Context, deviceID string) (*models.Device, error) {
+	c.logger.Info("Getting device %s from scope: %s", deviceID, c.scopeId)
 
-	endpoint := fmt.Sprintf("/%s/devices/%s", scopeID, deviceID)
+	endpoint := fmt.Sprintf("/%s/devices/%s", c.scopeId, deviceID)
 	resp, err := c.makeRequest(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("get device request failed: %w", err)
@@ -394,10 +396,10 @@ func (c *KapuaClient) GetDevice(ctx context.Context, scopeID, deviceID string) (
 }
 
 // CreateDevice creates a new device
-func (c *KapuaClient) CreateDevice(ctx context.Context, scopeID string, creator models.DeviceCreator) (*models.Device, error) {
-	c.logger.Info("Creating device %s in scope: %s", creator.ClientID, scopeID)
+func (c *KapuaClient) CreateDevice(ctx context.Context, creator models.DeviceCreator) (*models.Device, error) {
+	c.logger.Info("Creating device %s in scope: %s", creator.ClientID, c.scopeId)
 
-	endpoint := fmt.Sprintf("/%s/devices", scopeID)
+	endpoint := fmt.Sprintf("/%s/devices", c.scopeId)
 	resp, err := c.makeRequest(ctx, http.MethodPost, endpoint, creator)
 	if err != nil {
 		return nil, fmt.Errorf("create device request failed: %w", err)
@@ -413,10 +415,10 @@ func (c *KapuaClient) CreateDevice(ctx context.Context, scopeID string, creator 
 }
 
 // UpdateDevice updates an existing device
-func (c *KapuaClient) UpdateDevice(ctx context.Context, scopeID, deviceID string, device models.Device) (*models.Device, error) {
-	c.logger.Info("Updating device %s in scope: %s", deviceID, scopeID)
+func (c *KapuaClient) UpdateDevice(ctx context.Context, deviceID string, device models.Device) (*models.Device, error) {
+	c.logger.Info("Updating device %s in scope: %s", deviceID, c.scopeId)
 
-	endpoint := fmt.Sprintf("/%s/devices/%s", scopeID, deviceID)
+	endpoint := fmt.Sprintf("/%s/devices/%s", c.scopeId, deviceID)
 	resp, err := c.makeRequest(ctx, http.MethodPut, endpoint, device)
 	if err != nil {
 		return nil, fmt.Errorf("update device request failed: %w", err)
@@ -432,10 +434,10 @@ func (c *KapuaClient) UpdateDevice(ctx context.Context, scopeID, deviceID string
 }
 
 // DeleteDevice deletes a device
-func (c *KapuaClient) DeleteDevice(ctx context.Context, scopeID, deviceID string) error {
-	c.logger.Info("Deleting device %s from scope: %s", deviceID, scopeID)
+func (c *KapuaClient) DeleteDevice(ctx context.Context, deviceID string) error {
+	c.logger.Info("Deleting device %s from scope: %s", deviceID, c.scopeId)
 
-	endpoint := fmt.Sprintf("/%s/devices/%s", scopeID, deviceID)
+	endpoint := fmt.Sprintf("/%s/devices/%s", c.scopeId, deviceID)
 	resp, err := c.makeRequest(ctx, http.MethodDelete, endpoint, nil)
 	if err != nil {
 		return fmt.Errorf("delete device request failed: %w", err)

@@ -5,6 +5,10 @@ import "time"
 // KapuaID represents a Kapua entity ID
 type KapuaID string
 
+func (k KapuaID) String() string {
+	return string(k)
+}
+
 // KapuaEntity represents the base entity structure in Kapua
 type KapuaEntity struct {
 	ID         KapuaID   `json:"id,omitempty"`
@@ -87,15 +91,15 @@ type LoginInfo struct {
 // Credential represents user credential information
 type Credential struct {
 	KapuaEntity
-	UserID             KapuaID           `json:"userId,omitempty"`
-	CredentialType     CredentialType    `json:"credentialType,omitempty"`
-	CredentialKey      string            `json:"credentialKey,omitempty"`
-	Status             CredentialStatus  `json:"status,omitempty"`
-	ExpirationDate     time.Time         `json:"expirationDate,omitempty"`
-	LoginFailures      int               `json:"loginFailures,omitempty"`
-	FirstLoginFailure  time.Time         `json:"firstLoginFailure,omitempty"`
-	LoginFailuresReset time.Time         `json:"loginFailuresReset,omitempty"`
-	LockoutReset       time.Time         `json:"lockoutReset,omitempty"`
+	UserID             KapuaID          `json:"userId,omitempty"`
+	CredentialType     CredentialType   `json:"credentialType,omitempty"`
+	CredentialKey      string           `json:"credentialKey,omitempty"`
+	Status             CredentialStatus `json:"status,omitempty"`
+	ExpirationDate     time.Time        `json:"expirationDate,omitempty"`
+	LoginFailures      int              `json:"loginFailures,omitempty"`
+	FirstLoginFailure  time.Time        `json:"firstLoginFailure,omitempty"`
+	LoginFailuresReset time.Time        `json:"loginFailuresReset,omitempty"`
+	LockoutReset       time.Time        `json:"lockoutReset,omitempty"`
 }
 
 // CredentialType represents the type of credential
@@ -144,35 +148,35 @@ const (
 // Device represents a Kapua device
 type Device struct {
 	KapuaEntity
-	GroupID                        KapuaID      `json:"groupId,omitempty"`
-	ClientID                       string       `json:"clientId,omitempty"`
-	ConnectionID                   KapuaID      `json:"connectionId,omitempty"`
-	Status                         DeviceStatus `json:"status,omitempty"`
-	DisplayName                    string       `json:"displayName,omitempty"`
-	LastEventID                    KapuaID      `json:"lastEventId,omitempty"`
-	SerialNumber                   string       `json:"serialNumber,omitempty"`
-	ModelID                        string       `json:"modelId,omitempty"`
-	ModelName                      string       `json:"modelName,omitempty"`
-	Imei                           string       `json:"imei,omitempty"`
-	Imsi                           string       `json:"imsi,omitempty"`
-	Iccid                          string       `json:"iccid,omitempty"`
-	BiosVersion                    string       `json:"biosVersion,omitempty"`
-	FirmwareVersion                string       `json:"firmwareVersion,omitempty"`
-	OsVersion                      string       `json:"osVersion,omitempty"`
-	JvmVersion                     string       `json:"jvmVersion,omitempty"`
-	OsgiFrameworkVersion           string       `json:"osgiFrameworkVersion,omitempty"`
-	ApplicationFrameworkVersion    string       `json:"applicationFrameworkVersion,omitempty"`
-	ConnectionInterface            string       `json:"connectionInterface,omitempty"`
-	ConnectionIP                   string       `json:"connectionIp,omitempty"`
-	ApplicationIdentifiers         string       `json:"applicationIdentifiers,omitempty"`
-	AcceptEncoding                 string       `json:"acceptEncoding,omitempty"`
-	CustomAttribute1               string       `json:"customAttribute1,omitempty"`
-	CustomAttribute2               string       `json:"customAttribute2,omitempty"`
-	CustomAttribute3               string       `json:"customAttribute3,omitempty"`
-	CustomAttribute4               string       `json:"customAttribute4,omitempty"`
-	CustomAttribute5               string       `json:"customAttribute5,omitempty"`
-	ExtendedProperties             []DeviceExtendedProperty `json:"extendedProperties,omitempty"`
-	TagIDs                         []KapuaID    `json:"tagIds,omitempty"`
+	GroupID                     KapuaID                  `json:"groupId,omitempty"`
+	ClientID                    string                   `json:"clientId,omitempty"`
+	ConnectionID                KapuaID                  `json:"connectionId,omitempty"`
+	Status                      DeviceStatus             `json:"status,omitempty"`
+	DisplayName                 string                   `json:"displayName,omitempty"`
+	LastEventID                 KapuaID                  `json:"lastEventId,omitempty"`
+	SerialNumber                string                   `json:"serialNumber,omitempty"`
+	ModelID                     string                   `json:"modelId,omitempty"`
+	ModelName                   string                   `json:"modelName,omitempty"`
+	Imei                        string                   `json:"imei,omitempty"`
+	Imsi                        string                   `json:"imsi,omitempty"`
+	Iccid                       string                   `json:"iccid,omitempty"`
+	BiosVersion                 string                   `json:"biosVersion,omitempty"`
+	FirmwareVersion             string                   `json:"firmwareVersion,omitempty"`
+	OsVersion                   string                   `json:"osVersion,omitempty"`
+	JvmVersion                  string                   `json:"jvmVersion,omitempty"`
+	OsgiFrameworkVersion        string                   `json:"osgiFrameworkVersion,omitempty"`
+	ApplicationFrameworkVersion string                   `json:"applicationFrameworkVersion,omitempty"`
+	ConnectionInterface         string                   `json:"connectionInterface,omitempty"`
+	ConnectionIP                string                   `json:"connectionIp,omitempty"`
+	ApplicationIdentifiers      string                   `json:"applicationIdentifiers,omitempty"`
+	AcceptEncoding              string                   `json:"acceptEncoding,omitempty"`
+	CustomAttribute1            string                   `json:"customAttribute1,omitempty"`
+	CustomAttribute2            string                   `json:"customAttribute2,omitempty"`
+	CustomAttribute3            string                   `json:"customAttribute3,omitempty"`
+	CustomAttribute4            string                   `json:"customAttribute4,omitempty"`
+	CustomAttribute5            string                   `json:"customAttribute5,omitempty"`
+	ExtendedProperties          []DeviceExtendedProperty `json:"extendedProperties,omitempty"`
+	TagIDs                      []KapuaID                `json:"tagIds,omitempty"`
 }
 
 // DeviceExtendedProperty represents extended properties of a device
@@ -184,34 +188,34 @@ type DeviceExtendedProperty struct {
 
 // DeviceCreator represents a device creation request
 type DeviceCreator struct {
-	ScopeID                        KapuaID                  `json:"scopeId,omitempty"`
-	GroupID                        KapuaID                  `json:"groupId,omitempty"`
-	ClientID                       string                   `json:"clientId" jsonschema:"required,description=The Kura Client ID of this device"`
-	Status                         DeviceStatus             `json:"status,omitempty"`
-	DisplayName                    string                   `json:"displayName,omitempty"`
-	SerialNumber                   string                   `json:"serialNumber,omitempty"`
-	ModelID                        string                   `json:"modelId,omitempty"`
-	ModelName                      string                   `json:"modelName,omitempty"`
-	Imei                           string                   `json:"imei,omitempty"`
-	Imsi                           string                   `json:"imsi,omitempty"`
-	Iccid                          string                   `json:"iccid,omitempty"`
-	BiosVersion                    string                   `json:"biosVersion,omitempty"`
-	FirmwareVersion                string                   `json:"firmwareVersion,omitempty"`
-	OsVersion                      string                   `json:"osVersion,omitempty"`
-	JvmVersion                     string                   `json:"jvmVersion,omitempty"`
-	OsgiFrameworkVersion           string                   `json:"osgiFrameworkVersion,omitempty"`
-	ApplicationFrameworkVersion    string                   `json:"applicationFrameworkVersion,omitempty"`
-	ConnectionInterface            string                   `json:"connectionInterface,omitempty"`
-	ConnectionIP                   string                   `json:"connectionIp,omitempty"`
-	ApplicationIdentifiers         string                   `json:"applicationIdentifiers,omitempty"`
-	AcceptEncoding                 string                   `json:"acceptEncoding,omitempty"`
-	CustomAttribute1               string                   `json:"customAttribute1,omitempty"`
-	CustomAttribute2               string                   `json:"customAttribute2,omitempty"`
-	CustomAttribute3               string                   `json:"customAttribute3,omitempty"`
-	CustomAttribute4               string                   `json:"customAttribute4,omitempty"`
-	CustomAttribute5               string                   `json:"customAttribute5,omitempty"`
-	ExtendedProperties             []DeviceExtendedProperty `json:"extendedProperties,omitempty"`
-	TagIDs                         []KapuaID                `json:"tagIds,omitempty"`
+	ScopeID                     KapuaID                  `json:"scopeId,omitempty"`
+	GroupID                     KapuaID                  `json:"groupId,omitempty"`
+	ClientID                    string                   `json:"clientId" jsonschema:"required,description=The Kura Client ID of this device"`
+	Status                      DeviceStatus             `json:"status,omitempty"`
+	DisplayName                 string                   `json:"displayName,omitempty"`
+	SerialNumber                string                   `json:"serialNumber,omitempty"`
+	ModelID                     string                   `json:"modelId,omitempty"`
+	ModelName                   string                   `json:"modelName,omitempty"`
+	Imei                        string                   `json:"imei,omitempty"`
+	Imsi                        string                   `json:"imsi,omitempty"`
+	Iccid                       string                   `json:"iccid,omitempty"`
+	BiosVersion                 string                   `json:"biosVersion,omitempty"`
+	FirmwareVersion             string                   `json:"firmwareVersion,omitempty"`
+	OsVersion                   string                   `json:"osVersion,omitempty"`
+	JvmVersion                  string                   `json:"jvmVersion,omitempty"`
+	OsgiFrameworkVersion        string                   `json:"osgiFrameworkVersion,omitempty"`
+	ApplicationFrameworkVersion string                   `json:"applicationFrameworkVersion,omitempty"`
+	ConnectionInterface         string                   `json:"connectionInterface,omitempty"`
+	ConnectionIP                string                   `json:"connectionIp,omitempty"`
+	ApplicationIdentifiers      string                   `json:"applicationIdentifiers,omitempty"`
+	AcceptEncoding              string                   `json:"acceptEncoding,omitempty"`
+	CustomAttribute1            string                   `json:"customAttribute1,omitempty"`
+	CustomAttribute2            string                   `json:"customAttribute2,omitempty"`
+	CustomAttribute3            string                   `json:"customAttribute3,omitempty"`
+	CustomAttribute4            string                   `json:"customAttribute4,omitempty"`
+	CustomAttribute5            string                   `json:"customAttribute5,omitempty"`
+	ExtendedProperties          []DeviceExtendedProperty `json:"extendedProperties,omitempty"`
+	TagIDs                      []KapuaID                `json:"tagIds,omitempty"`
 }
 
 // DeviceListResult represents a list of devices
