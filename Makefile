@@ -17,8 +17,8 @@ build:
 clean:
 	rm -rf bin/*
 
-# test:
-# 	go test ./...
+test:
+	go test ./...
 
 # lint:
 # 	golangci-lint run

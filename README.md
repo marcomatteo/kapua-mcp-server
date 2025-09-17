@@ -14,18 +14,8 @@ kapua-mcp-server/
 │   │   └── config.go               # Configuration loading from env/.venv
 │   └── kapua/
 │       ├── handlers/
-│       │   ├── kapua.go            # Common MCP resource plumbing
-│       │   ├── devices.go          # Device tools (list/update/delete)
-│       │   └── devices_configurations.go # Configuration tools
 │       ├── models/
-│       │   ├── devices.go          # Device structs, list results
-│       │   ├── devices_configuration.go  # Component configuration schemas
-│       │   └── authentication.go   # Auth models
 │       └── services/
-│           ├── kapua_client.go     # HTTP client + auth/refresh
-│           ├── authentication.go   # /authentication endpoints
-│           ├── devices.go          # /{scopeId}/devices endpoints
-│           └── devices_configurations.go # /devices/{deviceId}/configurations
 ├── pkg/
 │   └── utils/
 │       └── logger.go               # Structured logging helper
@@ -64,6 +54,19 @@ Using Makefile:
 - Build and run: `make`
 
 Server listens on `host:port` (defaults: `localhost:8000`).
+
+## Testing and Coverage
+
+- Run the full unit test suite:
+  - `go test ./...`
+  - or `make test` (wrapper around the same command).
+- Generate a coverage profile while running tests:
+  - `go test ./... -coverprofile=coverage.out`
+- Inspect coverage results:
+  - Summary in the terminal: `go tool cover -func=coverage.out`
+  - Annotated HTML report: `go tool cover -html=coverage.out`
+
+The coverage report commands reuse the `coverage.out` file produced in the previous step; delete it when no longer needed.
 
 ## MCP Tools and Resources
 - Tool: `kapua-list-devices`
