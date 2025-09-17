@@ -36,16 +36,6 @@ func (c *KapuaClient) getToken() string {
 	return c.token
 }
 
-// isTokenExpiringSoon checks if the token expires within the next 5 minutes
-func (c *KapuaClient) isTokenExpiringSoon() bool {
-	c.tokenMutex.RLock()
-	defer c.tokenMutex.RUnlock()
-	if c.tokenExpiry.IsZero() {
-		return false
-	}
-	return time.Until(c.tokenExpiry) < 5*time.Minute
-}
-
 // refreshTokenIfNeeded refreshes an access token when expiring soon or already expired.
 // If already expired and the refresh token is also expired, it falls back to QuickAuthenticate.
 func (c *KapuaClient) refreshTokenIfNeeded(ctx context.Context) error {
