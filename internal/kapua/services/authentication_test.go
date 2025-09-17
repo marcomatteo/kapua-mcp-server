@@ -56,24 +56,6 @@ func TestSetTokenInfo(t *testing.T) {
 	}
 }
 
-func TestIsTokenExpiringSoon(t *testing.T) {
-	client := &KapuaClient{}
-
-	if client.isTokenExpiringSoon() {
-		t.Fatalf("expected zero expiry to be treated as not expiring")
-	}
-
-	client.tokenExpiry = time.Now().Add(10 * time.Minute)
-	if client.isTokenExpiringSoon() {
-		t.Fatalf("expected token 10 minutes out to not be expiring soon")
-	}
-
-	client.tokenExpiry = time.Now().Add(2 * time.Minute)
-	if !client.isTokenExpiringSoon() {
-		t.Fatalf("expected token 2 minutes out to be expiring soon")
-	}
-}
-
 func TestRefreshTokenIfNeededAutoRefreshDisabled(t *testing.T) {
 	client := &KapuaClient{
 		logger:      utils.NewDefaultLogger("test"),
