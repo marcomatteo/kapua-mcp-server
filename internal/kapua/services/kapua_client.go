@@ -74,9 +74,11 @@ func (c *KapuaClient) makeRequest(ctx context.Context, method, endpoint string, 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 
-	// Check if token needs refresh and add authentication header
-	if err := c.refreshTokenIfNeeded(ctx); err != nil {
-		c.logger.Warn("Token refresh failed, continuing with current token: %v", err)
+	// Skip refresh handling for authentication endpoints to avoid recursion
+	if !strings.HasPrefix(endpoint, "/authentication/") {
+		if err := c.refreshTokenIfNeeded(ctx); err != nil {
+			c.logger.Warn("Token refresh failed, continuing with current token: %v", err)
+		}
 	}
 
 	token := c.getToken()
