@@ -9,12 +9,22 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
 	"kapua-mcp-server/internal/config"
 	mcpserver "kapua-mcp-server/internal/mcp"
 )
+
+type kapuaServer interface {
+	Handler() http.Handler
+	ListenAndServe(string, http.Handler) error
+}
+
+var newServer = func(ctx context.Context, cfg *config.Config) (kapuaServer, error) {
+	return mcpserver.NewServer(ctx, cfg)
+}
 
 var (
 	host = flag.String("host", "localhost", "host to listen on")
@@ -44,22 +54,25 @@ func main() {
 	if *port != 8000 {
 		cfg.MCP.Port = *port
 	}
-	runServer(cfg, fmt.Sprintf("%s:%d", cfg.MCP.Host, cfg.MCP.Port))
+	if err := runServer(cfg, fmt.Sprintf("%s:%d", cfg.MCP.Host, cfg.MCP.Port)); err != nil {
+		log.Fatalf("Server failed: %v", err)
+	}
 }
 
-func runServer(cfg *config.Config, url string) {
+func runServer(cfg *config.Config, url string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	srv, err := mcpserver.NewServer(ctx, cfg)
+	srv, err := newServer(ctx, cfg)
 	if err != nil {
-		log.Fatalf("Failed to initialise MCP server: %v", err)
+		return fmt.Errorf("failed to initialise MCP server: %w", err)
 	}
 
 	baseHandler := srv.Handler()
 	handlerWithLogging := LoggingHandler(baseHandler)
 
 	if err := srv.ListenAndServe(url, handlerWithLogging); err != nil {
-		log.Fatalf("Server failed: %v", err)
+		return fmt.Errorf("server failed: %w", err)
 	}
+	return nil
 }
