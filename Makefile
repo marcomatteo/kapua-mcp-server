@@ -18,7 +18,7 @@ clean:
 	rm -rf bin/*
 
 test:
-	go test ./...
+	go test ./... -coverprofile=coverage.out
 
 # lint:
 # 	golangci-lint run
