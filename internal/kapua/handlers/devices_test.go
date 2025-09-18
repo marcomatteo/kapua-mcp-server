@@ -43,8 +43,8 @@ func TestHandleListDevicesSuccess(t *testing.T) {
 		if r.URL.Query().Get("clientId") != "acme" {
 			t.Fatalf("expected clientId acme, got %s", r.URL.Query().Get("clientId"))
 		}
-		if r.URL.Query().Get("status") != "ENABLED" {
-			t.Fatalf("expected status ENABLED, got %s", r.URL.Query().Get("status"))
+		if r.URL.Query().Get("status") != string(models.ConnectionStatusConnected) {
+			t.Fatalf("expected status %s, got %s", models.ConnectionStatusConnected, r.URL.Query().Get("status"))
 		}
 		if r.URL.Query().Get("matchTerm") != "sensor" {
 			t.Fatalf("expected matchTerm sensor, got %s", r.URL.Query().Get("matchTerm"))
@@ -65,7 +65,7 @@ func TestHandleListDevicesSuccess(t *testing.T) {
 		_, _ = w.Write(data)
 	})
 
-	params := &ListDevicesParams{ClientID: "acme", Status: "ENABLED", MatchTerm: "sensor", Limit: 25, Offset: 5}
+	params := &ListDevicesParams{ClientID: "acme", ConnectionStatus: models.ConnectionStatusConnected, MatchTerm: "sensor", Limit: 25, Offset: 5}
 	result, _, err := handler.HandleListDevices(context.Background(), nil, params)
 	if err != nil {
 		t.Fatalf("HandleListDevices returned error: %v", err)

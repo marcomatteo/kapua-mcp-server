@@ -10,6 +10,16 @@ const (
 	DeviceStatusDisabled DeviceStatus = "DISABLED"
 )
 
+// ConnectionStatus represents the connection status filter for devices
+type ConnectionStatus string
+
+const (
+	ConnectionStatusConnected    ConnectionStatus = "CONNECTED"
+	ConnectionStatusDisconnected ConnectionStatus = "DISCONNECTED"
+	ConnectionStatusMissing      ConnectionStatus = "MISSING"
+	ConnectionStatusNull         ConnectionStatus = "NULL"
+)
+
 // Device represents a Kapua device
 type Device struct {
 	KapuaEntity

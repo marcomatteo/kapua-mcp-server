@@ -15,11 +15,11 @@ import (
 
 // ListDevicesParams defines parameters for listing devices
 type ListDevicesParams struct {
-	ClientID  string `json:"clientId,omitempty" jsonschema:"Filter devices by client ID"`
-	Status    string `json:"status,omitempty" jsonschema:"Filter devices by status (ENABLED/DISABLED)"`
-	MatchTerm string `json:"matchTerm,omitempty" jsonschema:"Search term to match against device fields"`
-	Limit     int    `json:"limit,omitempty" jsonschema:"Maximum number of devices to return (default: 50)"`
-	Offset    int    `json:"offset,omitempty" jsonschema:"Number of devices to skip (default: 0)"`
+	ClientID         string                  `json:"clientId,omitempty" jsonschema:"Filter devices by client ID"`
+	ConnectionStatus models.ConnectionStatus `json:"status,omitempty" jsonschema:"Filter devices by connection status (CONNECTED/DISCONNECTED/MISSING/NULL)"`
+	MatchTerm        string                  `json:"matchTerm,omitempty" jsonschema:"Search term to match against device fields"`
+	Limit            int                     `json:"limit,omitempty" jsonschema:"Maximum number of devices to return (default: 50)"`
+	Offset           int                     `json:"offset,omitempty" jsonschema:"Number of devices to skip (default: 0)"`
 }
 
 // CreateDeviceParams defines parameters for creating a device
@@ -51,8 +51,8 @@ func (h *KapuaHandler) HandleListDevices(ctx context.Context, req *mcp.CallToolR
 	if params.ClientID != "" {
 		queryParams["clientId"] = params.ClientID
 	}
-	if params.Status != "" {
-		queryParams["status"] = params.Status
+	if params.ConnectionStatus != "" {
+		queryParams["status"] = string(params.ConnectionStatus)
 	}
 	if params.MatchTerm != "" {
 		queryParams["matchTerm"] = params.MatchTerm
