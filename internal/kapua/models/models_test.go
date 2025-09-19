@@ -104,3 +104,31 @@ func TestDeviceJSON(t *testing.T) {
 		t.Fatalf("expected extended property value 1.0, got %+v", device.ExtendedProperties)
 	}
 }
+
+func TestDeviceEventJSON(t *testing.T) {
+	payload := `{"id":"event-1","scopeId":"tenant","deviceId":"device-123","sentOn":"2023-03-10T12:00:01Z","receivedOn":"2023-03-10T12:00:02Z","resource":"LOG","action":"CREATE","responseCode":"ACCEPTED","eventMessage":"Device started","position":{"latitude":45.0,"longitude":9.0,"altitude":200.5,"timestamp":"2023-03-10T12:00:01Z","satellites":3,"status":1}}`
+
+	var event DeviceEvent
+	if err := json.Unmarshal([]byte(payload), &event); err != nil {
+		t.Fatalf("unexpected unmarshal error: %v", err)
+	}
+
+	if event.DeviceID != KapuaID("device-123") {
+		t.Fatalf("unexpected device id: %s", event.DeviceID)
+	}
+	if event.SentOn.IsZero() || event.ReceivedOn.IsZero() {
+		t.Fatalf("expected sentOn/receivedOn to be parsed: %+v", event)
+	}
+	if event.EventMessage != "Device started" {
+		t.Fatalf("unexpected event message: %s", event.EventMessage)
+	}
+	if event.Position == nil {
+		t.Fatalf("expected position to be unmarshalled")
+	}
+	if event.Position.Latitude != 45.0 || event.Position.Longitude != 9.0 {
+		t.Fatalf("unexpected position values: %+v", event.Position)
+	}
+	if event.Position.Timestamp.IsZero() {
+		t.Fatalf("expected position timestamp to be parsed")
+	}
+}

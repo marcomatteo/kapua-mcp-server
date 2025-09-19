@@ -5,8 +5,10 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
+	"unsafe"
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -63,4 +65,33 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 
 	registerKapuaTools(server, kapuaHandler)
 	registerKapuaResources(server, kapuaHandler)
+
+	// Access the server's internal tools registry via reflection to ensure the new
+	// tool has been registered. The MCP SDK does not currently expose a public API
+	// for enumerating tools outside of the JSON-RPC surface area, so reflection is
+	// used purely for test verification.
+	toolsField := reflect.ValueOf(server).Elem().FieldByName("tools")
+	if !toolsField.IsValid() {
+		t.Fatal("tools field not found on MCP server")
+	}
+
+	toolsValue := reflect.NewAt(toolsField.Type(), unsafe.Pointer(toolsField.UnsafeAddr())).Elem()
+	featuresField := toolsValue.Elem().FieldByName("features")
+	if !featuresField.IsValid() {
+		t.Fatal("features map not found on tools registry")
+	}
+	if got := featuresField.Len(); got != 5 {
+		t.Fatalf("expected 5 tools to be registered, got %d", got)
+	}
+
+	found := false
+	for _, key := range featuresField.MapKeys() {
+		if key.String() == "kapua-list-device-events" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected kapua-list-device-events tool to be registered")
+	}
 }

@@ -67,6 +67,7 @@ func (s *Server) ListenAndServe(addr string, handler http.Handler) error {
 	s.logger.Info("Kapua API endpoint: %s", s.cfg.Kapua.APIEndpoint)
 	s.logger.Info("Available Kapua tools:")
 	s.logger.Info("  - kapua-list-devices: List IoT devices in Kapua with filtering options.")
+	s.logger.Info("  - kapua-list-device-events: List device log events for a Kapua device.")
 	s.logger.Info("  - kapua-update-device: Update an existing Kapua device")
 	s.logger.Info("  - kapua-delete-device: Delete a device")
 	s.logger.Info("  - kapua-configurations-read: Read all configurations for a device")
@@ -79,6 +80,11 @@ func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandl
 		Name:        "kapua-list-devices",
 		Description: "List Kapua IoT devices",
 	}, kapuaHandler.HandleListDevices)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-list-device-events",
+		Description: "List Kapua device events (logs)",
+	}, kapuaHandler.HandleListDeviceEvents)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-update-device",
