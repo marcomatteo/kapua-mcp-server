@@ -70,6 +70,15 @@ func (s *Server) ListenAndServe(addr string, handler http.Handler) error {
 	s.logger.Info("  - kapua-update-device: Update an existing Kapua device")
 	s.logger.Info("  - kapua-delete-device: Delete a device")
 	s.logger.Info("  - kapua-configurations-read: Read all configurations for a device")
+	s.logger.Info("  - kapua-inventory-read: Read general inventory for a device")
+	s.logger.Info("  - kapua-inventory-bundles: List bundle inventory for a device")
+	s.logger.Info("  - kapua-inventory-bundle-start: Trigger bundle inventory start")
+	s.logger.Info("  - kapua-inventory-bundle-stop: Trigger bundle inventory stop")
+	s.logger.Info("  - kapua-inventory-containers: List container inventory for a device")
+	s.logger.Info("  - kapua-inventory-container-start: Trigger container inventory start")
+	s.logger.Info("  - kapua-inventory-container-stop: Trigger container inventory stop")
+	s.logger.Info("  - kapua-inventory-system-packages: List system packages for a device")
+	s.logger.Info("  - kapua-inventory-deployment-packages: List deployment packages for a device")
 
 	return http.ListenAndServe(addr, handler)
 }
@@ -94,6 +103,51 @@ func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandl
 		Name:        "kapua-configurations-read",
 		Description: "Read all configurations for a Kapua device (input: {id})",
 	}, kapuaHandler.HandleDeviceConfigurationsRead)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-read",
+		Description: "Read general inventory for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventoryRead)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-bundles",
+		Description: "List bundle inventory entries for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventoryBundles)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-bundle-start",
+		Description: "Request a bundle inventory start for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventoryBundleStart)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-bundle-stop",
+		Description: "Request a bundle inventory stop for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventoryBundleStop)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-containers",
+		Description: "List container inventory entries for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventoryContainers)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-container-start",
+		Description: "Request a container inventory start for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventoryContainerStart)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-container-stop",
+		Description: "Request a container inventory stop for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventoryContainerStop)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-system-packages",
+		Description: "List system packages inventory for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventorySystemPackages)
+
+	mcpsdk.AddTool(server, &mcpsdk.Tool{
+		Name:        "kapua-inventory-deployment-packages",
+		Description: "List deployment packages inventory for a Kapua device",
+	}, kapuaHandler.HandleDeviceInventoryDeploymentPackages)
 }
 
 func registerKapuaResources(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandler) {
