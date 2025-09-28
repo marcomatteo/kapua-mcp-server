@@ -1,0 +1,16 @@
+# VCS
+.git
+.gitignore
+
+# Local tooling and environments
+.vscode
+.idea
+.venv
+.DS_Store
+
+# Build artifacts
+bin
+coverage.out
+
+# Misc
+*.log
