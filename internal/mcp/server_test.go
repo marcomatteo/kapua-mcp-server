@@ -80,18 +80,34 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 	if !featuresField.IsValid() {
 		t.Fatal("features map not found on tools registry")
 	}
-	if got := featuresField.Len(); got != 5 {
-		t.Fatalf("expected 5 tools to be registered, got %d", got)
+	expectedTools := []string{
+		"kapua-list-devices",
+		"kapua-list-device-events",
+		"kapua-list-data-messages",
+		"kapua-configurations-read",
+		"kapua-inventory-read",
+		"kapua-inventory-bundles",
+		"kapua-inventory-bundle-start",
+		"kapua-inventory-bundle-stop",
+		"kapua-inventory-containers",
+		"kapua-inventory-container-start",
+		"kapua-inventory-container-stop",
+		"kapua-inventory-system-packages",
+		"kapua-inventory-deployment-packages",
 	}
 
-	found := false
-	for _, key := range featuresField.MapKeys() {
-		if key.String() == "kapua-list-device-events" {
-			found = true
-			break
-		}
+	if got := featuresField.Len(); got < len(expectedTools) {
+		t.Fatalf("expected at least %d tools to be registered, got %d", len(expectedTools), got)
 	}
-	if !found {
-		t.Fatalf("expected kapua-list-device-events tool to be registered")
+
+	registered := make(map[string]struct{})
+	for _, key := range featuresField.MapKeys() {
+		registered[key.String()] = struct{}{}
+	}
+
+	for _, name := range expectedTools {
+		if _, ok := registered[name]; !ok {
+			t.Fatalf("expected %s tool to be registered", name)
+		}
 	}
 }

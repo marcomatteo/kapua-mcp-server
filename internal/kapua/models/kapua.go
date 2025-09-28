@@ -20,6 +20,18 @@ type KapuaEntity struct {
 	OptLock    int       `json:"optlock,omitempty"`
 }
 
+// KapuaCountResult conveys the total number of entities available for a query.
+type KapuaCountResult struct {
+	Count int `json:"count,omitempty"`
+}
+
+// KapuaQuery captures the common pagination arguments supported by Kapua queries.
+type KapuaQuery struct {
+	Limit         int  `json:"limit,omitempty"`
+	Offset        int  `json:"offset,omitempty"`
+	AskTotalCount bool `json:"askTotalCount,omitempty"`
+}
+
 // Error Models
 
 // KapuaError represents a standard Kapua error response
@@ -34,4 +46,18 @@ func (e KapuaError) Error() string {
 		return e.Message + ": " + e.Details
 	}
 	return e.Message
+}
+
+// Position represents geographic and device telemetry positioning data
+// as defined by the Kapua position schema.
+type Position struct {
+	Latitude   float64   `json:"latitude,omitempty"`
+	Longitude  float64   `json:"longitude,omitempty"`
+	Altitude   float64   `json:"altitude,omitempty"`
+	Precision  float64   `json:"precision,omitempty"`
+	Heading    float64   `json:"heading,omitempty"`
+	Speed      float64   `json:"speed,omitempty"`
+	Timestamp  time.Time `json:"timestamp,omitempty"`
+	Satellites int       `json:"satellites,omitempty"`
+	Status     int       `json:"status,omitempty"`
 }
