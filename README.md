@@ -82,7 +82,7 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 
 ### Device Logs
 - `kapua-list-device-logs` — list device logs with optional channel and property filters (`GET /{scopeId}/deviceLogs`).
-  - _Availability:_ This tool requires an Eclipse Everyware Cloud endpoint; open-source Kapua deployments do not expose `/deviceLogs` and the tool will return guidance instead of data.
+  - _Availability:_ This tool requires an Eurotech Everyware Cloud endpoint; open-source Kapua deployments do not expose `/deviceLogs` and the tool will return guidance instead of data.
 
 ### Device Configuration
 - `kapua-configurations-read` — retrieve all component configurations for a device (`GET /{scopeId}/devices/{deviceId}/configurations`).
