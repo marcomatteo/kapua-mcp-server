@@ -1,6 +1,8 @@
 # kapua-mcp-server
 MCP Server for Eclipse Kapua IoT Device Management.
 
+This project is developed with support from OpenAI Codex.
+
 ## Project Structure
 
 ```
@@ -37,6 +39,7 @@ Required settings:
 - `KAPUA_API_ENDPOINT`: Kapua REST base URL (e.g., `https://kapua.example.com/api`)
 - `KAPUA_USER`: Kapua username
 - `KAPUA_PASSWORD`: Kapua password
+- `MCP_ALLOWED_ORIGINS` (optional): comma-separated list of additional origins allowed to call the HTTP Stream endpoint. Defaults include loopback hosts (`localhost`, `127.0.0.1`, `host.docker.internal`) for any port. Set to `*` to disable origin checks.
 
 Example `.venv`:
 ```
@@ -53,6 +56,40 @@ Using Makefile:
 - Build and run: `make`
 
 Server listens on `host:port` (defaults: `localhost:8000`).
+
+## Container Image
+
+A multi-stage Dockerfile is provided for container deployments. Build the image from the project root:
+
+```bash
+docker build -t kapua-mcp-server .
+```
+
+Run the container by supplying the Kapua credentials via environment variables and exposing the MCP port (defaults to `8000`):
+
+```bash
+docker run --rm \
+  -e KAPUA_API_ENDPOINT=https://api-sbx.everyware.io/v1 \
+  -e KAPUA_USER=your-user \
+  -e KAPUA_PASSWORD=your-password \
+  -p 8000:8000 \
+  kapua-mcp-server
+```
+
+or more simply:
+```bash
+docker run --rm \
+  --env-file ./.venv \
+  -p 8000:8000 \
+  kapua-mcp-server
+```
+
+The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is available in the container. Use `docker logs` for runtime inspection.
+
+> **Multi-architecture:** The Dockerfile honours BuildKit's `TARGETOS`/`TARGETARCH`. Building on Apple Silicon (`arm64`) or passing `--platform` via `docker buildx build --platform linux/amd64 .` produces a matching binary.
+
+> **Origin-handling**: Origin validation follows the MCP HTTP Stream specification. When running behind Docker, ensure the client connects using an allowed host (defaults cover loopback and `host.docker.internal`) or extend `MCP_ALLOWED_ORIGINS`.
+
 
 ## Testing and Coverage
 
@@ -71,8 +108,8 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 
 ### Device Directory
 - `kapua-list-devices` — list devices in scope using filters such as `clientId`, `status`, `matchTerm`, `limit`, `offset` (`GET /{scopeId}/devices`).
-- `kapua-update-device` — update an existing device (`PUT /{scopeId}/devices/{deviceId}`).
-- `kapua-delete-device` — delete a device (`DELETE /{scopeId}/devices/{deviceId}`).
+- `kapua-update-device` [1]— update an existing device (`PUT /{scopeId}/devices/{deviceId}`).
+- `kapua-delete-device` [1]— delete a device (`DELETE /{scopeId}/devices/{deviceId}`).
 
 ### Device Events
 - `kapua-list-device-events` — enumerate device log events with optional filters for time range, resource, pagination, and sort options (`GET /{scopeId}/devices/{deviceId}/events`).
@@ -119,5 +156,4 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 - `specs/ec_openapi.yaml` — Everyware Cloud-specific extensions (e.g., `/deviceLogs`). Device log support relies on this specification and is unavailable on vanilla Kapua.
 
 ## Notes
-- Docker files and extra scripts are not included yet; the Makefile builds a local binary.
-- MCP tool inputs must be JSON objects; even single-value inputs are wrapped (e.g., `{ "deviceId": "..." }`).
+[1]: Not tested.
