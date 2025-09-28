@@ -46,9 +46,11 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	registerKapuaTools(sdkServer, kapuaHandler)
 	registerKapuaResources(sdkServer, kapuaHandler)
 
-	httpHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
+	streamHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
 		return sdkServer
 	}, nil)
+
+	httpHandler := newOriginMiddleware(cfg.MCP, logger, streamHandler)
 
 	return &Server{
 		logger:    logger,
