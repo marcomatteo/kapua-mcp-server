@@ -22,6 +22,8 @@ kapua-mcp-server/
 │   └── utils/
 │       └── logger.go               # Structured logging helper
 ├── specs/                          # REST API (OpenAPI)
+├── Dockerfile                      # Multi-arch container build
+├── .dockerignore                   # Docker build context filter
 ├── bin/
 │   └── kapua-mcp-server            # Built binary output
 ├── Makefile
