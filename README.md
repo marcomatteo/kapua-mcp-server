@@ -80,7 +80,6 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 
 ### Data Clients
 - `kapua-list-data-messages` — list data messages with optional filters (multiple `clientId`, `channel`, pagination) (`GET /{scopeId}/data/messages`).
-- `kapua-get-data-message` — retrieve a specific data message entry (`GET /{scopeId}/data/messages/{datastoreMessageId}`).
 
 ### Device Configuration
 - `kapua-configurations-read` — retrieve all component configurations for a device (`GET /{scopeId}/devices/{deviceId}/configurations`).
@@ -102,7 +101,6 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 ## Kapua Client Helpers
 - Data message APIs exposed by `KapuaClient` back the MCP tools listed above:
   - `ListDataMessages` → `GET /{scopeId}/data/messages` (supports multiple `clientId` query parameters)
-  - `GetDataMessage` → `GET /{scopeId}/data/messages/{datastoreMessageId}`
 - Each helper accepts common pagination parameters and surfaces Kapua errors for precise handling.
 - Extend these helpers with additional MCP endpoints whenever new Kapua features are needed.
 
@@ -117,4 +115,3 @@ The Kapua REST API surface used by this server is documented in `specs/kapua_ope
 ## Notes
 - Docker files and extra scripts are not included yet; the Makefile builds a local binary.
 - MCP tool inputs must be JSON objects; even single-value inputs are wrapped (e.g., `{ "deviceId": "..." }`).
-- Based with `openapi-generator`, to install on Mac: `brew install openapi-generator`
