@@ -1,6 +1,8 @@
 # kapua-mcp-server
 MCP Server for Eclipse Kapua IoT Device Management.
 
+This project is developed with support from OpenAI Codex.
+
 ## Project Structure
 
 ```
@@ -74,7 +76,7 @@ docker run --rm \
   kapua-mcp-server
 ```
 
-or
+or more simply:
 ```bash
 docker run --rm \
   --env-file ./.venv \
@@ -85,7 +87,8 @@ docker run --rm \
 The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is available in the container. Use `docker logs` for runtime inspection.
 
 > **Multi-architecture:** The Dockerfile honours BuildKit's `TARGETOS`/`TARGETARCH`. Building on Apple Silicon (`arm64`) or passing `--platform` via `docker buildx build --platform linux/amd64 .` produces a matching binary.
-> Origin validation follows the MCP HTTP Stream specification. When running behind Docker, ensure the client connects using an allowed host (defaults cover loopback and `host.docker.internal`) or extend `MCP_ALLOWED_ORIGINS`.
+
+> **Origin-handling**: Origin validation follows the MCP HTTP Stream specification. When running behind Docker, ensure the client connects using an allowed host (defaults cover loopback and `host.docker.internal`) or extend `MCP_ALLOWED_ORIGINS`.
 
 
 ## Testing and Coverage
@@ -105,8 +108,8 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 
 ### Device Directory
 - `kapua-list-devices` — list devices in scope using filters such as `clientId`, `status`, `matchTerm`, `limit`, `offset` (`GET /{scopeId}/devices`).
-- `kapua-update-device` — update an existing device (`PUT /{scopeId}/devices/{deviceId}`).
-- `kapua-delete-device` — delete a device (`DELETE /{scopeId}/devices/{deviceId}`).
+- `kapua-update-device` [1]— update an existing device (`PUT /{scopeId}/devices/{deviceId}`).
+- `kapua-delete-device` [1]— delete a device (`DELETE /{scopeId}/devices/{deviceId}`).
 
 ### Device Events
 - `kapua-list-device-events` — enumerate device log events with optional filters for time range, resource, pagination, and sort options (`GET /{scopeId}/devices/{deviceId}/events`).
@@ -153,5 +156,4 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 - `specs/ec_openapi.yaml` — Everyware Cloud-specific extensions (e.g., `/deviceLogs`). Device log support relies on this specification and is unavailable on vanilla Kapua.
 
 ## Notes
-- Docker files and extra scripts are not included yet; the Makefile builds a local binary.
-- MCP tool inputs must be JSON objects; even single-value inputs are wrapped (e.g., `{ "deviceId": "..." }`).
+[1]: Not tested.
