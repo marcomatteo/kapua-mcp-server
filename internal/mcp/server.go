@@ -68,8 +68,9 @@ func (s *Server) ListenAndServe(addr string, handler http.Handler) error {
 	s.logger.Info("Available Kapua tools:")
 	s.logger.Info("  - kapua-list-devices: List IoT devices in Kapua with filtering options.")
 	s.logger.Info("  - kapua-list-device-events: List device log events for a Kapua device.")
-	s.logger.Info("  - kapua-update-device: Update an existing Kapua device")
-	s.logger.Info("  - kapua-delete-device: Delete a device")
+	s.logger.Info("  - kapua-list-data-messages: List Kapua data messages with filtering options.")
+	// s.logger.Info("  - kapua-update-device: Update an existing Kapua device")
+	// s.logger.Info("  - kapua-delete-device: Delete a device")
 	s.logger.Info("  - kapua-configurations-read: Read all configurations for a device")
 	s.logger.Info("  - kapua-inventory-read: Read general inventory for a device")
 	s.logger.Info("  - kapua-inventory-bundles: List bundle inventory for a device")
@@ -92,18 +93,23 @@ func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandl
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-list-device-events",
-		Description: "List Kapua device events (logs)",
+		Description: "Read Kapua device events",
 	}, kapuaHandler.HandleListDeviceEvents)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
-		Name:        "kapua-update-device",
-		Description: "Update an existing Kapua device",
-	}, kapuaHandler.HandleUpdateDevice)
+		Name:        "kapua-list-data-messages",
+		Description: "List Kapua data messages",
+	}, kapuaHandler.HandleListDataMessages)
 
-	mcpsdk.AddTool(server, &mcpsdk.Tool{
-		Name:        "kapua-delete-device",
-		Description: "Delete a Kapua device",
-	}, kapuaHandler.HandleDeleteDevice)
+	// mcpsdk.AddTool(server, &mcpsdk.Tool{
+	// 	Name:        "kapua-update-device",
+	// 	Description: "Update an existing Kapua device",
+	// }, kapuaHandler.HandleUpdateDevice)
+
+	// mcpsdk.AddTool(server, &mcpsdk.Tool{
+	// 	Name:        "kapua-delete-device",
+	// 	Description: "Delete a Kapua device",
+	// }, kapuaHandler.HandleDeleteDevice)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-configurations-read",

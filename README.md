@@ -78,6 +78,10 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 ### Device Events
 - `kapua-list-device-events` — enumerate device log events with optional filters for time range, resource, pagination, and sort options (`GET /{scopeId}/devices/{deviceId}/events`).
 
+### Data Clients
+- `kapua-list-data-messages` — list data messages with optional filters (multiple `clientId`, `channel`, pagination) (`GET /{scopeId}/data/messages`).
+- `kapua-get-data-message` — retrieve a specific data message entry (`GET /{scopeId}/data/messages/{datastoreMessageId}`).
+
 ### Device Configuration
 - `kapua-configurations-read` — retrieve all component configurations for a device (`GET /{scopeId}/devices/{deviceId}/configurations`).
 
@@ -96,12 +100,11 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 - `kapua://devices` — discoverable via MCP `resources/list` and readable through `resources/read`; returns JSON with up to 100 devices for the default scope `AQ` (`application/json`).
 
 ## Kapua Client Helpers
-- Data client APIs exposed by `KapuaClient`:
-  - `ListDataClients` → `GET /{scopeId}/data/clients`
-  - `CountDataClients` → `POST /{scopeId}/data/clients/_count`
-  - `GetDataClient` → `GET /{scopeId}/data/clients/{clientInfoId}`
+- Data message APIs exposed by `KapuaClient` back the MCP tools listed above:
+  - `ListDataMessages` → `GET /{scopeId}/data/messages` (supports multiple `clientId` query parameters)
+  - `GetDataMessage` → `GET /{scopeId}/data/messages/{datastoreMessageId}`
 - Each helper accepts common pagination parameters and surfaces Kapua errors for precise handling.
-- Combine these with custom MCP tools when you need first-class access to Kapua messaging clients alongside device resources.
+- Extend these helpers with additional MCP endpoints whenever new Kapua features are needed.
 
 ## Authentication and Token Refresh
 - On startup, the server authenticates with Kapua using username/password.

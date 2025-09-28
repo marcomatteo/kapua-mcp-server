@@ -5,79 +5,81 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"kapua-mcp-server/internal/kapua/models"
 )
 
-// ListDataClients queries the Kapua Data Client registry within the current scope.
-func (c *KapuaClient) ListDataClients(ctx context.Context, params map[string]string) (*models.ClientInfoListResult, error) {
-	c.logger.Info("Listing data clients for scope: %s", c.scopeId)
+// DataMessagesQuery captures filter options supported by Kapua's /data/messages endpoint.
+type DataMessagesQuery struct {
+	ClientIDs     []string
+	Channel       string
+	StrictChannel *bool
+	StartDate     string
+	EndDate       string
+	SortDir       string
+	Limit         *int
+	Offset        *int
+}
 
-	query := url.Values{}
-	for key, value := range params {
-		if value != "" {
-			query.Set(key, value)
+func (q *DataMessagesQuery) toValues() url.Values {
+	values := url.Values{}
+	if q == nil {
+		return values
+	}
+
+	for _, clientID := range q.ClientIDs {
+		if clientID != "" {
+			values.Add("clientId", clientID)
 		}
 	}
 
-	endpoint := fmt.Sprintf("/%s/data/clients", c.scopeId)
-	if encoded := query.Encode(); encoded != "" {
+	if q.Channel != "" {
+		values.Set("channel", q.Channel)
+	}
+	if q.StrictChannel != nil {
+		values.Set("strictChannel", strconv.FormatBool(*q.StrictChannel))
+	}
+	if q.StartDate != "" {
+		values.Set("startDate", q.StartDate)
+	}
+	if q.EndDate != "" {
+		values.Set("endDate", q.EndDate)
+	}
+	if q.SortDir != "" {
+		values.Set("sortDir", q.SortDir)
+	}
+	if q.Limit != nil {
+		values.Set("limit", strconv.Itoa(*q.Limit))
+	}
+	if q.Offset != nil {
+		values.Set("offset", strconv.Itoa(*q.Offset))
+	}
+
+	return values
+}
+
+// ListDataMessages queries the Kapua Data Message API within the current scope.
+func (c *KapuaClient) ListDataMessages(ctx context.Context, query *DataMessagesQuery) (*models.DataMessageListResult, error) {
+	c.logger.Info("Listing data messages for scope: %s", c.scopeId)
+
+	params := query.toValues()
+
+	endpoint := fmt.Sprintf("/%s/data/messages", c.scopeId)
+	if encoded := params.Encode(); encoded != "" {
 		endpoint += "?" + encoded
 	}
 
 	resp, err := c.makeRequest(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("list data clients request failed: %w", err)
+		return nil, fmt.Errorf("list data messages request failed: %w", err)
 	}
 
-	var result models.ClientInfoListResult
+	var result models.DataMessageListResult
 	if err := c.handleResponse(resp, &result); err != nil {
-		return nil, fmt.Errorf("failed to list data clients: %w", err)
+		return nil, fmt.Errorf("failed to list data messages: %w", err)
 	}
 
-	c.logger.Info("Listed %d data clients successfully", len(result.Items))
+	c.logger.Info("Listed %d data messages successfully", len(result.Items))
 	return &result, nil
-}
-
-// CountDataClients returns how many data clients exist for the provided query.
-func (c *KapuaClient) CountDataClients(ctx context.Context, query *models.KapuaQuery) (*models.KapuaCountResult, error) {
-	c.logger.Info("Counting data clients for scope: %s", c.scopeId)
-
-	payload := query
-	if payload == nil {
-		payload = &models.KapuaQuery{}
-	}
-
-	endpoint := fmt.Sprintf("/%s/data/clients/_count", c.scopeId)
-	resp, err := c.makeRequest(ctx, http.MethodPost, endpoint, payload)
-	if err != nil {
-		return nil, fmt.Errorf("count data clients request failed: %w", err)
-	}
-
-	var result models.KapuaCountResult
-	if err := c.handleResponse(resp, &result); err != nil {
-		return nil, fmt.Errorf("failed to count data clients: %w", err)
-	}
-
-	c.logger.Info("Counted %d data clients", result.Count)
-	return &result, nil
-}
-
-// GetDataClient retrieves a single data client by its clientInfo identifier.
-func (c *KapuaClient) GetDataClient(ctx context.Context, clientInfoID string) (*models.ClientInfo, error) {
-	c.logger.Info("Getting data client %s in scope: %s", clientInfoID, c.scopeId)
-
-	endpoint := fmt.Sprintf("/%s/data/clients/%s", c.scopeId, clientInfoID)
-	resp, err := c.makeRequest(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, fmt.Errorf("get data client request failed: %w", err)
-	}
-
-	var info models.ClientInfo
-	if err := c.handleResponse(resp, &info); err != nil {
-		return nil, fmt.Errorf("failed to get data client: %w", err)
-	}
-
-	c.logger.Info("Retrieved data client %s", info.ClientID)
-	return &info, nil
 }
