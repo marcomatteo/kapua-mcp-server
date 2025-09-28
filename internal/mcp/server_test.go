@@ -83,6 +83,7 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 	expectedTools := []string{
 		"kapua-list-devices",
 		"kapua-list-device-events",
+		"kapua-list-device-logs",
 		"kapua-list-data-messages",
 		"kapua-configurations-read",
 		"kapua-inventory-read",

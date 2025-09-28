@@ -81,6 +81,9 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 ### Data Clients
 - `kapua-list-data-messages` — list data messages with optional filters (multiple `clientId`, `channel`, pagination) (`GET /{scopeId}/data/messages`).
 
+### Device Logs
+- `kapua-list-device-logs` — list device logs with optional channel and property filters (`GET /{scopeId}/deviceLogs`).
+
 ### Device Configuration
 - `kapua-configurations-read` — retrieve all component configurations for a device (`GET /{scopeId}/devices/{deviceId}/configurations`).
 
@@ -99,8 +102,10 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 - `kapua://devices` — discoverable via MCP `resources/list` and readable through `resources/read`; returns JSON with up to 100 devices for the default scope `AQ` (`application/json`).
 
 ## Kapua Client Helpers
-- Data message APIs exposed by `KapuaClient` back the MCP tools listed above:
+- Kapua client helpers exposed by `KapuaClient` back the MCP tools listed above:
+  - `ListDeviceLogs` → `GET /{scopeId}/deviceLogs`
   - `ListDataMessages` → `GET /{scopeId}/data/messages` (supports multiple `clientId` query parameters)
+  - `GetDataMessage` → `GET /{scopeId}/data/messages/{datastoreMessageId}`
 - Each helper accepts common pagination parameters and surfaces Kapua errors for precise handling.
 - Extend these helpers with additional MCP endpoints whenever new Kapua features are needed.
 
