@@ -2,13 +2,17 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 
 	"kapua-mcp-server/internal/kapua/models"
 )
+
+var ErrDeviceLogsNotSupported = errors.New("device logs API is only available on Eclipse Everyware Cloud endpoints")
 
 // DeviceLogsQuery captures filter options for Kapua's /deviceLogs endpoint.
 type DeviceLogsQuery struct {
@@ -86,6 +90,12 @@ func (c *KapuaClient) ListDeviceLogs(ctx context.Context, query *DeviceLogsQuery
 	resp, err := c.makeRequest(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("list device logs request failed: %w", err)
+	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		defer resp.Body.Close()
+		_, _ = io.Copy(io.Discard, resp.Body)
+		return nil, ErrDeviceLogsNotSupported
 	}
 
 	var result models.DeviceLogListResult

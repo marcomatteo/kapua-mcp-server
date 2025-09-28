@@ -128,6 +128,22 @@ func TestListDeviceLogsRequestError(t *testing.T) {
 	}
 }
 
+func TestListDeviceLogsNotSupported(t *testing.T) {
+	client := newTestKapuaClient()
+	client.httpClient = &http.Client{Transport: deviceLogsRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+		return &http.Response{
+			StatusCode: http.StatusNotFound,
+			Body:       io.NopCloser(strings.NewReader("")),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	_, err := client.ListDeviceLogs(context.Background(), nil)
+	if err == nil || !errors.Is(err, ErrDeviceLogsNotSupported) {
+		t.Fatalf("expected ErrDeviceLogsNotSupported, got %v", err)
+	}
+}
+
 func TestListDeviceLogsHandleError(t *testing.T) {
 	client := newTestKapuaClient()
 	client.httpClient = &http.Client{Transport: deviceLogsRoundTripFunc(func(req *http.Request) (*http.Response, error) {

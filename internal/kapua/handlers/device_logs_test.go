@@ -3,11 +3,13 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
 
 	"kapua-mcp-server/internal/kapua/models"
+	"kapua-mcp-server/internal/kapua/services"
 )
 
 func TestHandleListDeviceLogsSuccess(t *testing.T) {
@@ -118,5 +120,16 @@ func TestHandleListDeviceLogsServiceError(t *testing.T) {
 	_, _, err := handler.HandleListDeviceLogs(context.Background(), nil, &ListDeviceLogsParams{})
 	if err == nil || !strings.Contains(err.Error(), "failed to list device logs") {
 		t.Fatalf("expected wrapped error, got %v", err)
+	}
+}
+
+func TestHandleListDeviceLogsNotSupported(t *testing.T) {
+	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	})
+
+	_, _, err := handler.HandleListDeviceLogs(context.Background(), nil, &ListDeviceLogsParams{})
+	if err == nil || !errors.Is(err, services.ErrDeviceLogsNotSupported) {
+		t.Fatalf("expected ErrDeviceLogsNotSupported, got %v", err)
 	}
 }

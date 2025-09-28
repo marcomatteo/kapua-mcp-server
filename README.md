@@ -19,8 +19,7 @@ kapua-mcp-server/
 ├── pkg/
 │   └── utils/
 │       └── logger.go               # Structured logging helper
-├── specs/
-│   └── kapua_openapi.yaml          # Kapua REST API (OpenAPI)
+├── specs/                          # REST API (OpenAPI)
 ├── bin/
 │   └── kapua-mcp-server            # Built binary output
 ├── Makefile
@@ -83,6 +82,7 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 
 ### Device Logs
 - `kapua-list-device-logs` — list device logs with optional channel and property filters (`GET /{scopeId}/deviceLogs`).
+  - _Availability:_ This tool requires an Eclipse Everyware Cloud endpoint; open-source Kapua deployments do not expose `/deviceLogs` and the tool will return guidance instead of data.
 
 ### Device Configuration
 - `kapua-configurations-read` — retrieve all component configurations for a device (`GET /{scopeId}/devices/{deviceId}/configurations`).
@@ -115,7 +115,8 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 - If the access token is expired and the refresh token is also expired/missing, the client performs a full re-authentication.
 
 ## API Spec
-The Kapua REST API surface used by this server is documented in `specs/kapua_openapi.yaml`.
+- `specs/kapua_openapi.yaml` — community Kapua REST interface used by most tools.
+- `specs/ec_openapi.yaml` — Everyware Cloud-specific extensions (e.g., `/deviceLogs`). Device log support relies on this specification and is unavailable on vanilla Kapua.
 
 ## Notes
 - Docker files and extra scripts are not included yet; the Makefile builds a local binary.

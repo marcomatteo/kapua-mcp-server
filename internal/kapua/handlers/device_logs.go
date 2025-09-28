@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -62,6 +63,9 @@ func (h *KapuaHandler) HandleListDeviceLogs(ctx context.Context, req *mcp.CallTo
 	result, err := h.client.ListDeviceLogs(ctx, query)
 	if err != nil {
 		h.logger.Error("List device logs failed: %v", err)
+		if errors.Is(err, services.ErrDeviceLogsNotSupported) {
+			return nil, nil, err
+		}
 		return nil, nil, fmt.Errorf("failed to list device logs: %w", err)
 	}
 
