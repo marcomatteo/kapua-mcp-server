@@ -29,12 +29,12 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 
 # Runtime stage
 FROM scratch as release-slim
-WORKDIR /app
 
 # Copy binary and TLS certificates
 COPY --from=builder /out/kapua-mcp-server /app/kapua-mcp-server
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8000
+WORKDIR /app
 ENTRYPOINT ["/app/kapua-mcp-server"]
 CMD ["--host", "0.0.0.0", "--port", "8000"]
