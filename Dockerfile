@@ -28,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="-s -w" -o /out/kapua-mcp-server ./cmd/server
 
 # Runtime stage
-FROM gcr.io/distroless/base-debian12:nonroot
+FROM scratch as release-slim
 WORKDIR /app
 
 # Copy binary and TLS certificates
