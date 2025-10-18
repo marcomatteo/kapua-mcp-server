@@ -29,7 +29,7 @@ func NewLogger(prefix string, level LogLevel) *Logger {
 	return &Logger{
 		level:  level,
 		prefix: prefix,
-		logger: log.New(os.Stdout, "", log.LstdFlags),
+		logger: log.New(os.Stderr, "", log.LstdFlags),
 	}
 }
 

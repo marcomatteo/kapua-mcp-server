@@ -40,19 +40,19 @@ func TestSafeString(t *testing.T) {
 	}
 }
 
-func captureOutput(f func()) string {
+func captureErrorOutput(f func()) string {
 	r, w, _ := os.Pipe()
-	orig := os.Stdout
-	os.Stdout = w
+	orig := os.Stderr
+	os.Stderr = w
 	f()
 	w.Close()
-	os.Stdout = orig
+	os.Stderr = orig
 	out, _ := io.ReadAll(r)
 	return string(out)
 }
 
 func TestLoggerLevels(t *testing.T) {
-	output := captureOutput(func() {
+	output := captureErrorOutput(func() {
 		logger := NewLogger("test", LogLevelInfo)
 		logger.Debug("debug message")
 		logger.Info("info message")
