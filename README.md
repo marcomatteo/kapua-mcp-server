@@ -123,23 +123,21 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
 2. Add or update the `mcpServers` array with a stdio configuration. The example below runs the server through Docker so you do not need the binary on your host:
    ```json
    {
-     "mcpServers": [
-       {
-         "name": "Kapua (stdio)",
-         "command": "docker",
-         "args": [
-           "run",
-           "--rm",
-           "-i",
-           "--env-file",
-           "/path/to/.venv",
-           "kapua-mcp-server",
-           "-transport",
-           "stdio"
-         ]
-       }
-     ]
-   }
+     "mcpServers": "mcpServers": {
+        "kapua-mcp-server": {
+          "command": "/Users/marco/dev/git-marcomatteo/kapua-mcp-server/bin/kapua-mcp-server",
+          "args": [
+            "-transport",
+            "stdio"
+          ],
+          "env": {
+            "KAPUA_API_ENDPOINT": "https://api.kapua.io/",
+            "KAPUA_USER": "kapua-user",
+            "KAPUA_PASSWORD": "kapua-password"
+          }
+        }
+     }
+  }
    ```
 3. Restart Claude Desktop. The Kapua tools appear under the **Servers** tab, and Claude will launch the Docker container when you connect.
 
