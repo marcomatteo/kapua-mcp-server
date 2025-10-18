@@ -15,6 +15,7 @@ import (
 	"kapua-mcp-server/internal/config"
 	"kapua-mcp-server/internal/kapua/handlers"
 	"kapua-mcp-server/internal/kapua/services"
+	"kapua-mcp-server/pkg/utils"
 )
 
 func TestNewServerSuccess(t *testing.T) {
@@ -110,5 +111,20 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 		if _, ok := registered[name]; !ok {
 			t.Fatalf("expected %s tool to be registered", name)
 		}
+	}
+}
+
+func TestRunTransportNilTransport(t *testing.T) {
+	srv := &Server{
+		logger:  utils.NewDefaultLogger("test"),
+		handler: http.NewServeMux(),
+		cfg: &config.Config{
+			Kapua: config.KapuaConfig{APIEndpoint: "https://example"},
+		},
+		mcpServer: mcpsdk.NewServer(&mcpsdk.Implementation{Name: "test", Version: "dev"}, nil),
+	}
+
+	if err := srv.RunTransport(context.Background(), "custom", nil); err == nil || !strings.Contains(err.Error(), "transport cannot be nil") {
+		t.Fatalf("expected error about nil transport, got %v", err)
 	}
 }

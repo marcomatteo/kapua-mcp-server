@@ -65,8 +65,37 @@ func (s *Server) Handler() http.Handler {
 }
 
 func (s *Server) ListenAndServe(addr string, handler http.Handler) error {
-	s.logger.Info("MCP server listening on %s", addr)
+	s.logStartup("streamable-http", addr)
+	return http.ListenAndServe(addr, handler)
+}
+
+func (s *Server) RunTransport(ctx context.Context, transportName string, transport mcpsdk.Transport) error {
+	if transport == nil {
+		return fmt.Errorf("transport cannot be nil")
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if transportName == "" {
+		transportName = "custom"
+	}
+
+	s.logStartup(transportName, "")
+
+	return s.mcpServer.Run(ctx, transport)
+}
+
+func (s *Server) logStartup(transportName, endpoint string) {
+	if endpoint != "" {
+		s.logger.Info("MCP server listening on %s via %s transport", endpoint, transportName)
+	} else {
+		s.logger.Info("MCP server using %s transport", transportName)
+	}
 	s.logger.Info("Kapua API endpoint: %s", s.cfg.Kapua.APIEndpoint)
+	s.logAvailableTools()
+}
+
+func (s *Server) logAvailableTools() {
 	s.logger.Info("Available Kapua tools:")
 	s.logger.Info("  - kapua-list-devices: List IoT devices in Kapua with filtering options.")
 	s.logger.Info("  - kapua-list-device-events: List device log events for a Kapua device.")
@@ -84,8 +113,6 @@ func (s *Server) ListenAndServe(addr string, handler http.Handler) error {
 	s.logger.Info("  - kapua-inventory-container-stop: Trigger container inventory stop")
 	s.logger.Info("  - kapua-inventory-system-packages: List system packages for a device")
 	s.logger.Info("  - kapua-inventory-deployment-packages: List deployment packages for a device")
-
-	return http.ListenAndServe(addr, handler)
 }
 
 func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandler) {
