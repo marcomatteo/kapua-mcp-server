@@ -123,7 +123,7 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
 2. Add or update the `mcpServers` array with a stdio configuration. The example below runs the server through Docker so you do not need the binary on your host:
    ```json
    {
-     "mcpServers": "mcpServers": {
+     "mcpServers": {
         "kapua-mcp-server": {
           "command": "/Users/marco/dev/git-marcomatteo/kapua-mcp-server/bin/kapua-mcp-server",
           "args": [
