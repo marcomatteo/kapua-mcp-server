@@ -84,7 +84,7 @@ func runServer(cfg *config.Config, transport string, addr string) error {
 		}
 	case "stdio":
 		loggingTransport := &mcpsdk.LoggingTransport{Transport: &mcpsdk.StdioTransport{}, Writer: os.Stderr}
-		if err := srv.RunTransport(context.Background(), "stdio", loggingTransport); err != nil {
+		if err := srv.RunTransport(ctx, "stdio", loggingTransport); err != nil {
 			return fmt.Errorf("server failed: %w", err)
 		}
 	default:
