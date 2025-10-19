@@ -1,7 +1,7 @@
 all: build run
 
 APP := kapua-mcp-server
-VERSION := 0.1.0
+VERSION := 1.0.0
 
 .PHONY: run build clean test lint help
 
