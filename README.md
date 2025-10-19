@@ -1,5 +1,5 @@
 # kapua-mcp-server
-MCP Server for Eclipse Kapua IoT Device Management.
+kapua-mcp-server is an MCP server designed primarily for local troubleshooting and operator tooling when working with Eclipse Kapua or Eurotech Everyware Cloud IoT Device Management platforms. It exposes Kapua APIs through the Model Context Protocol so that assistants and diagnostics utilities can inspect devices, configurations, and telemetry without deploying additional infrastructure.
 
 This project is developed with support from OpenAI Codex.
 
@@ -10,14 +10,17 @@ kapua-mcp-server/
 ├── cmd/
 │   └── server/
 │       ├── logging_middleware.go   # HTTP request logging wrapper
-│       └── main.go                 # Application entry point (MCP HTTP server)
+│       └── main.go                 # CLI entry point (stdio default, -http optional)
 ├── internal/
-│   ├── config/
-│   │   └── config.go               # Configuration loading from env/.venv
-│   └── kapua/
-│       ├── handlers/
-│       ├── models/
-│       └── services/
+│   ├── kapua/
+│   │   ├── config/                 # Kapua-specific configuration loader
+│   │   ├── handlers/               # Tool implementations (devices, telemetry, etc.)
+│   │   ├── models/                 # Kapua API data models
+│   │   └── services/               # Kapua REST/Authentication clients
+│   └── mcp/
+│       ├── http_config.go          # HTTP transport configuration helpers
+│       ├── origin_guard.go         # Allowed-origin middleware
+│       └── server.go               # MCP server wiring and transport helpers
 ├── pkg/
 │   └── utils/
 │       └── logger.go               # Structured logging helper
@@ -64,19 +67,19 @@ KAPUA_PASSWORD=We!come12345
    ```bash
    make build
    ```
-3. Launch the server over stdio (recommended for local tooling):
+3. Launch the server over stdio (default; recommended for local tooling):
    ```bash
-   ./bin/kapua-mcp-server -transport stdio
+   ./bin/kapua-mcp-server
    ```
 
    The process remains attached to your terminal, exchanging JSON-RPC messages over standard input/output with your MCP client.
 
 4. Switch to HTTP when you need a network-accessible endpoint:
    ```bash
-   ./bin/kapua-mcp-server -transport http
+   ./bin/kapua-mcp-server -http
    ```
 
-   The HTTP transport listens on `host:port` (defaults to `localhost:8000`). Use `make run` to compile and start the binary in one step if you prefer.
+   The HTTP transport listens on `host:port` (defaults to `localhost:8000`). You can override these with `-host` and `-port` at startup. Use `make run` to compile and start the binary in one step if you prefer.
 
 ## Quick Start (Docker)
 
@@ -94,17 +97,7 @@ docker run --rm \
   -e KAPUA_USER=my-user \
   -e KAPUA_PASSWORD=We!come12345 \
   -p 8000:8000 \
-  kapua-mcp-server -transport http
-```
-
-Need stdio transport inside Docker? Keep the container interactive so your MCP client can read/write the process streams:
-
-```bash
-docker run --rm -i \
-  -e KAPUA_API_ENDPOINT=https://kapua.example.com/api \
-  -e KAPUA_USER=my-user \
-  -e KAPUA_PASSWORD=We!come12345 \
-  kapua-mcp-server -transport stdio
+  kapua-mcp-server
 ```
 
 The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is available in the container. Inspect logs with `docker logs <container>`.
@@ -116,6 +109,7 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
 ## MCP Client Configuration Examples
 
 ### Claude Desktop (macOS/Windows)
+> Claude desktop supports only STDIO MCP servers.
 
 1. Locate the Claude Desktop configuration file:
    - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -126,10 +120,7 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
      "mcpServers": {
         "kapua-mcp-server": {
           "command": "/Users/marco/dev/git-marcomatteo/kapua-mcp-server/bin/kapua-mcp-server",
-          "args": [
-            "-transport",
-            "stdio"
-          ],
+          "args": [],
           "env": {
             "KAPUA_API_ENDPOINT": "https://api.kapua.io/",
             "KAPUA_USER": "kapua-user",
@@ -143,7 +134,9 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
 
    Replace the placeholder credential values with your Kapua settings before saving the configuration.
 
-For HTTP-based setups, expose the container as shown in the Docker quick start and point Claude Desktop to `http://host.docker.internal:8000` (macOS/Windows) or `http://127.0.0.1:8000` (Linux).
+### Custom MCP Client
+
+For HTTP-based setups, expose the container as shown in the Docker quick start and configure a MCP Client application to `http://host.docker.internal:8000` (macOS/Windows) or `http://127.0.0.1:8000` (Linux).
 
 
 ## Testing and Coverage
