@@ -129,7 +129,7 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
         }
      }
   }
-   ```
+  ```
 3. Restart Claude Desktop. The Kapua tools appear under the **Servers** tab, and Claude will launch the Docker container when you connect.
 
    Replace the placeholder credential values with your Kapua settings before saving the configuration.
