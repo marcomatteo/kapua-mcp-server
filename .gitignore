@@ -26,14 +26,17 @@ go.work.sum
 .gocache
 
 # env file
-.venv
 .env
 
 # Editor/IDE
 # .idea/
-.vscode/
+# .vscode/
 
+# Project-specific
+.venv
+.vscode/
 openapi-generated/
 kapua-mcp-server
 .DS_Store
 WARP.md
+.gocache/
