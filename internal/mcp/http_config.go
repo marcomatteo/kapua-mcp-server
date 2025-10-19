@@ -40,9 +40,10 @@ func (cfg *HTTPConfig) SetPort(port int) {
 	cfg.recompute()
 }
 
-// SetHost updates the configured host.
+// SetHost updates the configured host and recomputes the derived origin list.
 func (cfg *HTTPConfig) SetHost(host string) {
 	cfg.Host = host
+	cfg.recompute()
 }
 
 // SetAllowedOrigins replaces the set of configured origins and recomputes the
