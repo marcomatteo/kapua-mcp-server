@@ -5,7 +5,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"kapua-mcp-server/internal/config"
 	"kapua-mcp-server/pkg/utils"
 )
 
@@ -14,7 +13,7 @@ func newTestLogger() *utils.Logger {
 }
 
 func TestOriginMiddlewareAllowsMatchingHost(t *testing.T) {
-	cfg := config.MCPConfig{
+	cfg := &HTTPConfig{
 		AllowedOrigins: []string{"http://localhost"},
 	}
 	logger := newTestLogger()
@@ -35,7 +34,7 @@ func TestOriginMiddlewareAllowsMatchingHost(t *testing.T) {
 }
 
 func TestOriginMiddlewareAllowsLoopbackEquivalence(t *testing.T) {
-	cfg := config.MCPConfig{}
+	cfg := &HTTPConfig{}
 	logger := newTestLogger()
 
 	handler := newOriginMiddleware(cfg, logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +53,7 @@ func TestOriginMiddlewareAllowsLoopbackEquivalence(t *testing.T) {
 }
 
 func TestOriginMiddlewareAllowsConfiguredPattern(t *testing.T) {
-	cfg := config.MCPConfig{AllowedOrigins: []string{"https://example.com:9000"}}
+	cfg := &HTTPConfig{AllowedOrigins: []string{"https://example.com:9000"}}
 	logger := newTestLogger()
 
 	handler := newOriginMiddleware(cfg, logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +71,7 @@ func TestOriginMiddlewareAllowsConfiguredPattern(t *testing.T) {
 }
 
 func TestOriginMiddlewareRejectsUnknownHost(t *testing.T) {
-	cfg := config.MCPConfig{}
+	cfg := &HTTPConfig{}
 	logger := newTestLogger()
 
 	handler := newOriginMiddleware(cfg, logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +90,7 @@ func TestOriginMiddlewareRejectsUnknownHost(t *testing.T) {
 }
 
 func TestOriginMiddlewareWildcardAllowsAll(t *testing.T) {
-	cfg := config.MCPConfig{AllowedOrigins: []string{"*"}}
+	cfg := &HTTPConfig{AllowedOrigins: []string{"*"}}
 	logger := newTestLogger()
 
 	handler := newOriginMiddleware(cfg, logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +109,7 @@ func TestOriginMiddlewareWildcardAllowsAll(t *testing.T) {
 }
 
 func TestOriginMiddlewareAllowsMissingOrigin(t *testing.T) {
-	cfg := config.MCPConfig{}
+	cfg := &HTTPConfig{}
 	logger := newTestLogger()
 
 	handler := newOriginMiddleware(cfg, logger, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

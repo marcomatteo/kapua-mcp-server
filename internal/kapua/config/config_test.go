@@ -55,9 +55,6 @@ func TestLoadFromEnv(t *testing.T) {
 	if cfg.Kapua.Timeout != 30 {
 		t.Errorf("expected default Timeout 30, got %d", cfg.Kapua.Timeout)
 	}
-	if cfg.MCP.Host != "localhost" || cfg.MCP.Port != 8000 {
-		t.Errorf("unexpected MCP defaults: %+v", cfg.MCP)
-	}
 }
 
 func TestEnvOverridesFile(t *testing.T) {

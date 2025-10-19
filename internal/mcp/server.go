@@ -7,7 +7,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"kapua-mcp-server/internal/config"
+	"kapua-mcp-server/internal/kapua/config"
 	"kapua-mcp-server/internal/kapua/handlers"
 	"kapua-mcp-server/internal/kapua/services"
 	"kapua-mcp-server/pkg/utils"
@@ -15,20 +15,22 @@ import (
 
 type Server struct {
 	logger    *utils.Logger
-	handler   http.Handler
-	cfg       *config.Config
+	kapuaCfg  *config.Config
 	mcpServer *mcpsdk.Server
 }
 
-func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
+func NewServer(ctx context.Context, kapuaCfg *config.Config) (*Server, error) {
 	if ctx == nil {
 		ctx = context.Background()
+	}
+	if kapuaCfg == nil {
+		return nil, fmt.Errorf("kapua configuration cannot be nil")
 	}
 
 	logger := utils.NewDefaultLogger("MCPServer")
 	logger.Info("Starting Kapua MCP Server")
 
-	kapuaClient := services.NewKapuaClient(&cfg.Kapua)
+	kapuaClient := services.NewKapuaClient(&kapuaCfg.Kapua)
 
 	logger.Info("Authenticating to Kapua on startup...")
 	if _, err := kapuaClient.QuickAuthenticate(ctx); err != nil {
@@ -46,22 +48,25 @@ func NewServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	registerKapuaTools(sdkServer, kapuaHandler)
 	registerKapuaResources(sdkServer, kapuaHandler)
 
-	streamHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
-		return sdkServer
-	}, nil)
-
-	httpHandler := newOriginMiddleware(cfg.MCP, logger, streamHandler)
-
 	return &Server{
 		logger:    logger,
-		handler:   httpHandler,
-		cfg:       cfg,
+		kapuaCfg:  kapuaCfg,
 		mcpServer: sdkServer,
 	}, nil
 }
 
-func (s *Server) Handler() http.Handler {
-	return s.handler
+func (s *Server) Handler(httpCfg *HTTPConfig) http.Handler {
+
+	streamHandler := mcpsdk.NewStreamableHTTPHandler(func(*http.Request) *mcpsdk.Server {
+		return s.mcpServer
+	}, nil)
+
+	logger := s.logger
+	if logger == nil {
+		logger = utils.NewDefaultLogger("MCPServer")
+	}
+
+	return newOriginMiddleware(httpCfg, logger, streamHandler)
 }
 
 func (s *Server) ListenAndServe(addr string, handler http.Handler) error {
@@ -91,28 +96,9 @@ func (s *Server) logStartup(transportName, endpoint string) {
 	} else {
 		s.logger.Info("MCP server using %s transport", transportName)
 	}
-	s.logger.Info("Kapua API endpoint: %s", s.cfg.Kapua.APIEndpoint)
-	s.logAvailableTools()
-}
-
-func (s *Server) logAvailableTools() {
-	s.logger.Info("Available Kapua tools:")
-	s.logger.Info("  - kapua-list-devices: List IoT devices in Kapua with filtering options.")
-	s.logger.Info("  - kapua-list-device-events: List device log events for a Kapua device.")
-	s.logger.Info("  - kapua-list-device-logs: List logs across Kapua devices.")
-	s.logger.Info("  - kapua-list-data-messages: List Kapua data messages with filtering options.")
-	// s.logger.Info("  - kapua-update-device: Update an existing Kapua device")
-	// s.logger.Info("  - kapua-delete-device: Delete a device")
-	s.logger.Info("  - kapua-configurations-read: Read all configurations for a device")
-	s.logger.Info("  - kapua-inventory-read: Read general inventory for a device")
-	s.logger.Info("  - kapua-inventory-bundles: List bundle inventory for a device")
-	s.logger.Info("  - kapua-inventory-bundle-start: Trigger bundle inventory start")
-	s.logger.Info("  - kapua-inventory-bundle-stop: Trigger bundle inventory stop")
-	s.logger.Info("  - kapua-inventory-containers: List container inventory for a device")
-	s.logger.Info("  - kapua-inventory-container-start: Trigger container inventory start")
-	s.logger.Info("  - kapua-inventory-container-stop: Trigger container inventory stop")
-	s.logger.Info("  - kapua-inventory-system-packages: List system packages for a device")
-	s.logger.Info("  - kapua-inventory-deployment-packages: List deployment packages for a device")
+	if s.kapuaCfg != nil {
+		s.logger.Info("Kapua API endpoint: %s", s.kapuaCfg.Kapua.APIEndpoint)
+	}
 }
 
 func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandler) {

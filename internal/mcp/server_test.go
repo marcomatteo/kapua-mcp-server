@@ -12,7 +12,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"kapua-mcp-server/internal/config"
+	"kapua-mcp-server/internal/kapua/config"
 	"kapua-mcp-server/internal/kapua/handlers"
 	"kapua-mcp-server/internal/kapua/services"
 	"kapua-mcp-server/pkg/utils"
@@ -37,7 +37,7 @@ func TestNewServerSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewServer returned error: %v", err)
 	}
-	if srv.Handler() == nil {
+	if srv.Handler(&HTTPConfig{}) == nil {
 		t.Fatal("expected handler")
 	}
 }
@@ -116,9 +116,8 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 
 func TestRunTransportNilTransport(t *testing.T) {
 	srv := &Server{
-		logger:  utils.NewDefaultLogger("test"),
-		handler: http.NewServeMux(),
-		cfg: &config.Config{
+		logger: utils.NewDefaultLogger("test"),
+		kapuaCfg: &config.Config{
 			Kapua: config.KapuaConfig{APIEndpoint: "https://example"},
 		},
 		mcpServer: mcpsdk.NewServer(&mcpsdk.Implementation{Name: "test", Version: "dev"}, nil),

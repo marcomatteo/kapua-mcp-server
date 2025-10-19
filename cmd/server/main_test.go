@@ -8,7 +8,7 @@ import (
 
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"kapua-mcp-server/internal/config"
+	mcpserver "kapua-mcp-server/internal/mcp"
 )
 
 type stubKapuaServer struct {
@@ -16,6 +16,7 @@ type stubKapuaServer struct {
 	listenErr              error
 	listenAddr             string
 	receivedHandler        http.Handler
+	receivedHTTPConfig     *mcpserver.HTTPConfig
 	listenCalled           bool
 	runTransportCalled     bool
 	runTransportErr        error
@@ -24,7 +25,8 @@ type stubKapuaServer struct {
 	runTransportContextNil bool
 }
 
-func (s *stubKapuaServer) Handler() http.Handler {
+func (s *stubKapuaServer) Handler(cfg *mcpserver.HTTPConfig) http.Handler {
+	s.receivedHTTPConfig = cfg
 	if s.handler == nil {
 		s.handler = http.NewServeMux()
 	}
@@ -46,21 +48,12 @@ func (s *stubKapuaServer) RunTransport(ctx context.Context, name string, transpo
 	return s.runTransportErr
 }
 
-func TestRunServerHTTP(t *testing.T) {
+func TestRunHTTPServer(t *testing.T) {
 	stub := &stubKapuaServer{}
-	oldNewServer := newServer
-	defer func() { newServer = oldNewServer }()
+	httpCfg := &mcpserver.HTTPConfig{Host: "localhost", Port: 0}
 
-	newServer = func(ctx context.Context, cfg *config.Config) (kapuaServer, error) {
-		if ctx == nil {
-			t.Fatal("expected non-nil context")
-		}
-		return stub, nil
-	}
-
-	err := runServer(&config.Config{}, "http", "localhost:0")
-	if err != nil {
-		t.Fatalf("runServer returned error: %v", err)
+	if err := runHTTPServer(stub, httpCfg); err != nil {
+		t.Fatalf("runHTTPServer returned error: %v", err)
 	}
 	if !stub.listenCalled {
 		t.Fatalf("expected ListenAndServe to be called")
@@ -71,54 +64,34 @@ func TestRunServerHTTP(t *testing.T) {
 	if stub.receivedHandler == nil {
 		t.Fatalf("expected logging handler to be passed")
 	}
+	if stub.receivedHTTPConfig != httpCfg {
+		t.Fatalf("expected HTTP config to be forwarded")
+	}
 	if stub.runTransportCalled {
 		t.Fatalf("expected RunTransport not to be called for HTTP transport")
 	}
 }
 
-func TestRunServerNewServerError(t *testing.T) {
-	oldNewServer := newServer
-	defer func() { newServer = oldNewServer }()
-
-	wantErr := errors.New("boom")
-	newServer = func(ctx context.Context, cfg *config.Config) (kapuaServer, error) {
-		return nil, wantErr
-	}
-
-	err := runServer(&config.Config{}, "http", "localhost:0")
-	if err == nil || !errors.Is(err, wantErr) {
-		t.Fatalf("expected wrapped boom error, got %v", err)
+func TestRunHTTPServerNilConfig(t *testing.T) {
+	if err := runHTTPServer(&stubKapuaServer{}, nil); err == nil || err.Error() != "http transport requires configuration" {
+		t.Fatalf("expected configuration error, got %v", err)
 	}
 }
 
-func TestRunServerListenError(t *testing.T) {
-	listenErr := errors.New("listen failure")
-	stub := &stubKapuaServer{listenErr: listenErr}
-	oldNewServer := newServer
-	defer func() { newServer = oldNewServer }()
+func TestRunHTTPServerListenError(t *testing.T) {
+	stub := &stubKapuaServer{listenErr: errors.New("listen failure")}
 
-	newServer = func(ctx context.Context, cfg *config.Config) (kapuaServer, error) {
-		return stub, nil
-	}
-
-	err := runServer(&config.Config{}, "http", "localhost:0")
-	if err == nil || !errors.Is(err, listenErr) {
+	err := runHTTPServer(stub, &mcpserver.HTTPConfig{Host: "localhost", Port: 0})
+	if err == nil || !errors.Is(err, stub.listenErr) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
-func TestRunServerStdio(t *testing.T) {
+func TestRunStdioServer(t *testing.T) {
 	stub := &stubKapuaServer{}
-	oldNewServer := newServer
-	defer func() { newServer = oldNewServer }()
 
-	newServer = func(ctx context.Context, cfg *config.Config) (kapuaServer, error) {
-		return stub, nil
-	}
-
-	err := runServer(&config.Config{}, "stdio", "ignored")
-	if err != nil {
-		t.Fatalf("runServer returned error: %v", err)
+	if err := runStdioServer(stub); err != nil {
+		t.Fatalf("runStdioServer returned error: %v", err)
 	}
 	if !stub.runTransportCalled {
 		t.Fatalf("expected RunTransport to be called for stdio transport")
@@ -140,39 +113,14 @@ func TestRunServerStdio(t *testing.T) {
 	}
 }
 
-func TestRunServerStdioError(t *testing.T) {
-	transportErr := errors.New("transport failure")
-	stub := &stubKapuaServer{runTransportErr: transportErr}
-	oldNewServer := newServer
-	defer func() { newServer = oldNewServer }()
+func TestRunStdioServerTransportError(t *testing.T) {
+	stub := &stubKapuaServer{runTransportErr: errors.New("transport failure")}
 
-	newServer = func(ctx context.Context, cfg *config.Config) (kapuaServer, error) {
-		return stub, nil
-	}
-
-	err := runServer(&config.Config{}, "stdio", "ignored")
-	if err == nil || !errors.Is(err, transportErr) {
+	err := runStdioServer(stub)
+	if err == nil || !errors.Is(err, stub.runTransportErr) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !stub.runTransportCalled {
 		t.Fatalf("expected RunTransport to be called for stdio transport")
-	}
-}
-
-func TestRunServerUnsupportedTransport(t *testing.T) {
-	stub := &stubKapuaServer{}
-	oldNewServer := newServer
-	defer func() { newServer = oldNewServer }()
-
-	newServer = func(ctx context.Context, cfg *config.Config) (kapuaServer, error) {
-		return stub, nil
-	}
-
-	err := runServer(&config.Config{}, "invalid", "ignored")
-	if err == nil || err.Error() != "unsupported transport \"invalid\"" {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if stub.runTransportCalled || stub.listenCalled {
-		t.Fatalf("expected no transport methods to be invoked for unsupported transport")
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strings"
 
-	"kapua-mcp-server/internal/config"
 	"kapua-mcp-server/pkg/utils"
 )
 
@@ -23,7 +22,11 @@ type originPattern struct {
 	port         string
 }
 
-func newOriginMiddleware(cfg config.MCPConfig, logger *utils.Logger, next http.Handler) http.Handler {
+func newOriginMiddleware(cfg *HTTPConfig, logger *utils.Logger, next http.Handler) http.Handler {
+	if cfg == nil {
+		cfg = &HTTPConfig{}
+	}
+
 	policy := compileOriginPolicy(cfg.AllowedOrigins, logger)
 	if policy.allowAll {
 		return next
