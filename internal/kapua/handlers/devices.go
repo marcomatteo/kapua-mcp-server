@@ -90,54 +90,6 @@ func (h *KapuaHandler) HandleListDevices(ctx context.Context, req *mcp.CallToolR
 	}, nil, nil
 }
 
-// HandleUpdateDevice handles updating an existing Kapua device
-func (h *KapuaHandler) HandleUpdateDevice(ctx context.Context, req *mcp.CallToolRequest, params *UpdateDeviceParams) (*mcp.CallToolResult, any, error) {
-	h.logger.Info("Updating device %s", params.DeviceID)
-
-	var payload models.Device
-	if b, err := json.Marshal(params.Device); err != nil {
-		return nil, nil, fmt.Errorf("failed to encode device payload: %w", err)
-	} else if err := json.Unmarshal(b, &payload); err != nil {
-		return nil, nil, fmt.Errorf("invalid device payload: %w", err)
-	}
-
-	updated, err := h.client.UpdateDevice(ctx, params.DeviceID, payload)
-	if err != nil {
-		h.logger.Error("Update device failed: %v", err)
-		return nil, nil, fmt.Errorf("failed to update device: %w", err)
-	}
-
-	jsonData, err := json.Marshal(updated)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to marshal updated device: %w", err)
-	}
-
-	summary := fmt.Sprintf("Updated device %s (ID: %s)", updated.ClientID, updated.ID)
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			&mcp.TextContent{Text: summary},
-			&mcp.TextContent{Text: string(jsonData)},
-		},
-	}, updated, nil
-}
-
-// HandleDeleteDevice handles deleting a Kapua device
-func (h *KapuaHandler) HandleDeleteDevice(ctx context.Context, req *mcp.CallToolRequest, params *DeleteDeviceParams) (*mcp.CallToolResult, any, error) {
-	h.logger.Info("Deleting device %s", params.DeviceID)
-
-	if err := h.client.DeleteDevice(ctx, params.DeviceID); err != nil {
-		h.logger.Error("Delete device failed: %v", err)
-		return nil, nil, fmt.Errorf("failed to delete device: %w", err)
-	}
-
-	summary := fmt.Sprintf("Deleted device ID %s", params.DeviceID)
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			&mcp.TextContent{Text: summary},
-		},
-	}, map[string]string{"status": "deleted", "deviceId": params.DeviceID}, nil
-}
-
 // readDevicesResource returns all devices as a JSON resource
 func (h *KapuaHandler) readDevicesResource(ctx context.Context) (*mcp.ReadResourceResult, error) {
 	// Get all devices with reasonable defaults

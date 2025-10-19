@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"kapua-mcp-server/internal/config"
+	"kapua-mcp-server/internal/kapua/config"
 	"kapua-mcp-server/internal/kapua/models"
 	"kapua-mcp-server/pkg/utils"
 )

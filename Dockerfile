@@ -37,4 +37,4 @@ COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8000
 ENTRYPOINT ["/app/kapua-mcp-server"]
-CMD ["--host", "0.0.0.0", "--port", "8000"]
+CMD ["-http", "--host", "0.0.0.0", "--port", "8000"]

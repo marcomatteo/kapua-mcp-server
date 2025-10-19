@@ -1,5 +1,5 @@
 # kapua-mcp-server
-MCP Server for Eclipse Kapua IoT Device Management.
+kapua-mcp-server is an MCP server designed primarily for local troubleshooting and operator tooling when working with Eclipse Kapua or Eurotech Everyware Cloud IoT Device Management platforms. It exposes Kapua APIs through the Model Context Protocol so that assistants and diagnostics utilities can inspect devices, configurations, and telemetry without deploying additional infrastructure.
 
 This project is developed with support from OpenAI Codex.
 
@@ -10,14 +10,17 @@ kapua-mcp-server/
 ├── cmd/
 │   └── server/
 │       ├── logging_middleware.go   # HTTP request logging wrapper
-│       └── main.go                 # Application entry point (MCP HTTP server)
+│       └── main.go                 # CLI entry point (stdio default, -http optional)
 ├── internal/
-│   ├── config/
-│   │   └── config.go               # Configuration loading from env/.venv
-│   └── kapua/
-│       ├── handlers/
-│       ├── models/
-│       └── services/
+│   ├── kapua/
+│   │   ├── config/                 # Kapua-specific configuration loader
+│   │   ├── handlers/               # Tool implementations (devices, telemetry, etc.)
+│   │   ├── models/                 # Kapua API data models
+│   │   └── services/               # Kapua REST/Authentication clients
+│   └── mcp/
+│       ├── http_config.go          # HTTP transport configuration helpers
+│       ├── origin_guard.go         # Allowed-origin middleware
+│       └── server.go               # MCP server wiring and transport helpers
 ├── pkg/
 │   └── utils/
 │       └── logger.go               # Structured logging helper
@@ -50,47 +53,90 @@ KAPUA_USER=my-user
 KAPUA_PASSWORD=We!come12345
 ```
 
-## Build and Run
+## Quick Start (Local Binary)
 
-Using Makefile:
-- Build: `make build`
-- Run: `make run` (runs `./bin/kapua-mcp-server`)
-- Build and run: `make`
+1. Create a `.venv` file for credentials (keeps secrets out of your shell history):
+   ```bash
+   cat <<'EOF' > .venv
+   KAPUA_API_ENDPOINT=https://kapua.example.com/api
+   KAPUA_USER=my-user
+   KAPUA_PASSWORD=We!come12345
+   EOF
+   ```
+2. Build the binary (optional—`go run ./cmd/server` works too):
+   ```bash
+   make build
+   ```
+3. Launch the server over stdio (default; recommended for local tooling):
+   ```bash
+   ./bin/kapua-mcp-server
+   ```
 
-Server listens on `host:port` (defaults: `localhost:8000`).
+   The process remains attached to your terminal, exchanging JSON-RPC messages over standard input/output with your MCP client.
 
-## Container Image
+4. Switch to HTTP when you need a network-accessible endpoint:
+   ```bash
+   ./bin/kapua-mcp-server -http
+   ```
 
-A multi-stage Dockerfile is provided for container deployments. Build the image from the project root:
+   The HTTP transport listens on `host:port` (defaults to `localhost:8000`). You can override these with `-host` and `-port` at startup. Use `make run` to compile and start the binary in one step if you prefer.
+
+## Quick Start (Docker)
+
+Build a local image:
 
 ```bash
 docker build -t kapua-mcp-server .
 ```
 
-Run the container by supplying the Kapua credentials via environment variables and exposing the MCP port (defaults to `8000`):
+Run the container exposing the HTTP stream transport (ideal for remote clients). Inject your Kapua credentials as environment variables:
 
 ```bash
 docker run --rm \
-  -e KAPUA_API_ENDPOINT=https://api-sbx.everyware.io/v1 \
-  -e KAPUA_USER=your-user \
-  -e KAPUA_PASSWORD=your-password \
+  -e KAPUA_API_ENDPOINT=https://kapua.example.com/api \
+  -e KAPUA_USER=my-user \
+  -e KAPUA_PASSWORD=We!come12345 \
   -p 8000:8000 \
   kapua-mcp-server
 ```
 
-or more simply:
-```bash
-docker run --rm \
-  --env-file ./.venv \
-  -p 8000:8000 \
-  kapua-mcp-server
-```
-
-The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is available in the container. Use `docker logs` for runtime inspection.
+The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is available in the container. Inspect logs with `docker logs <container>`.
 
 > **Multi-architecture:** The Dockerfile honours BuildKit's `TARGETOS`/`TARGETARCH`. Building on Apple Silicon (`arm64`) or passing `--platform` via `docker buildx build --platform linux/amd64 .` produces a matching binary.
 
-> **Origin-handling**: Origin validation follows the MCP HTTP Stream specification. When running behind Docker, ensure the client connects using an allowed host (defaults cover loopback and `host.docker.internal`) or extend `MCP_ALLOWED_ORIGINS`.
+> **Origin-handling:** Origin validation follows the MCP HTTP Stream specification. When running behind Docker, ensure the client connects using an allowed host (defaults cover loopback and `host.docker.internal`) or extend `MCP_ALLOWED_ORIGINS`.
+
+## MCP Client Configuration Examples
+
+### Claude Desktop (macOS/Windows)
+> Claude desktop supports only STDIO MCP servers.
+
+1. Locate the Claude Desktop configuration file:
+   - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+2. Add or update the `mcpServers` array with a stdio configuration:
+   ```json
+   {
+     "mcpServers": {
+        "kapua-mcp-server": {
+          "command": "/Users/marco/dev/git-marcomatteo/kapua-mcp-server/bin/kapua-mcp-server",
+          "args": [],
+          "env": {
+            "KAPUA_API_ENDPOINT": "https://api.kapua.io/",
+            "KAPUA_USER": "kapua-user",
+            "KAPUA_PASSWORD": "kapua-password"
+          }
+        }
+     }
+  }
+   ```
+3. Restart Claude Desktop. The Kapua tools appear under the **Servers** tab, and Claude will launch the Docker container when you connect.
+
+   Replace the placeholder credential values with your Kapua settings before saving the configuration.
+
+### Custom MCP Client
+
+For HTTP-based setups, expose the container as shown in the Docker quick start and configure a MCP Client application to `http://host.docker.internal:8000` (macOS/Windows) or `http://127.0.0.1:8000` (Linux).
 
 
 ## Testing and Coverage
@@ -110,8 +156,6 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 
 ### Device Directory
 - `kapua-list-devices` — list devices in scope using filters such as `clientId`, `status`, `matchTerm`, `limit`, `offset` (`GET /{scopeId}/devices`).
-- `kapua-update-device` [1]— update an existing device (`PUT /{scopeId}/devices/{deviceId}`).
-- `kapua-delete-device` [1]— delete a device (`DELETE /{scopeId}/devices/{deviceId}`).
 
 ### Device Events
 - `kapua-list-device-events` — enumerate device log events with optional filters for time range, resource, pagination, and sort options (`GET /{scopeId}/devices/{deviceId}/events`).
@@ -156,6 +200,3 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 ## API Spec
 - `specs/kapua_openapi.yaml` — community Kapua REST interface used by most tools.
 - `specs/ec_openapi.yaml` — Everyware Cloud-specific extensions (e.g., `/deviceLogs`). Device log support relies on this specification and is unavailable on vanilla Kapua.
-
-## Notes
-[1]: Not tested.

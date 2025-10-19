@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,7 +10,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"kapua-mcp-server/internal/config"
+	"kapua-mcp-server/internal/kapua/config"
 	"kapua-mcp-server/internal/kapua/models"
 	"kapua-mcp-server/internal/kapua/services"
 	"kapua-mcp-server/pkg/utils"
@@ -100,129 +99,5 @@ func TestHandleListDevicesServiceError(t *testing.T) {
 	}
 	if got := err.Error(); !strings.Contains(got, "failed to list devices") {
 		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestHandleUpdateDeviceSuccess(t *testing.T) {
-	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
-			t.Fatalf("expected PUT, got %s", r.Method)
-		}
-		if r.URL.Path != "/v1/tenant/devices/device-1" {
-			t.Fatalf("unexpected path %s", r.URL.Path)
-		}
-
-		var payload models.Device
-		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-			t.Fatalf("failed to decode payload: %v", err)
-		}
-		if payload.ClientID != "client-1" {
-			t.Fatalf("expected client ID client-1, got %s", payload.ClientID)
-		}
-
-		payload.DisplayName = "Updated"
-		data, _ := json.Marshal(payload)
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(data)
-	})
-
-	params := &UpdateDeviceParams{
-		DeviceID: "device-1",
-		Device: map[string]any{
-			"clientId":    "client-1",
-			"displayName": "Sensor",
-		},
-	}
-
-	result, updated, err := handler.HandleUpdateDevice(context.Background(), nil, params)
-	if err != nil {
-		t.Fatalf("HandleUpdateDevice returned error: %v", err)
-	}
-	if updated == nil {
-		t.Fatalf("expected updated device data")
-	}
-
-	summary := textContent(t, result.Content[0])
-	if !strings.Contains(summary, "Updated device client-1") {
-		t.Fatalf("unexpected summary: %s", summary)
-	}
-
-	device, ok := updated.(*models.Device)
-	if !ok {
-		t.Fatalf("expected device type, got %T", updated)
-	}
-	if device.DisplayName != "Updated" {
-		t.Fatalf("expected updated display name, got %s", device.DisplayName)
-	}
-}
-
-func TestHandleUpdateDeviceEncodeError(t *testing.T) {
-	handler := &KapuaHandler{logger: utils.NewDefaultLogger("test")}
-	params := &UpdateDeviceParams{Device: map[string]any{"invalid": math.Inf(1)}}
-
-	_, _, err := handler.HandleUpdateDevice(context.Background(), nil, params)
-	if err == nil || !strings.Contains(err.Error(), "failed to encode device payload") {
-		t.Fatalf("expected encode error, got %v", err)
-	}
-}
-
-func TestHandleUpdateDeviceInvalidPayload(t *testing.T) {
-	handler := &KapuaHandler{logger: utils.NewDefaultLogger("test")}
-	params := &UpdateDeviceParams{Device: map[string]any{"status": 123}}
-
-	_, _, err := handler.HandleUpdateDevice(context.Background(), nil, params)
-	if err == nil || !strings.Contains(err.Error(), "invalid device payload") {
-		t.Fatalf("expected invalid payload error, got %v", err)
-	}
-}
-
-func TestHandleUpdateDeviceServiceError(t *testing.T) {
-	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadGateway)
-		_, _ = w.Write([]byte("bad gateway"))
-	})
-
-	params := &UpdateDeviceParams{DeviceID: "device-1", Device: map[string]any{"clientId": "client"}}
-	_, _, err := handler.HandleUpdateDevice(context.Background(), nil, params)
-	if err == nil || !strings.Contains(err.Error(), "failed to update device") {
-		t.Fatalf("expected update error, got %v", err)
-	}
-}
-
-func TestHandleDeleteDeviceSuccess(t *testing.T) {
-	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodDelete {
-			t.Fatalf("expected DELETE, got %s", r.Method)
-		}
-		if r.URL.Path != "/v1/tenant/devices/device-1" {
-			t.Fatalf("unexpected path %s", r.URL.Path)
-		}
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	result, data, err := handler.HandleDeleteDevice(context.Background(), nil, &DeleteDeviceParams{DeviceID: "device-1"})
-	if err != nil {
-		t.Fatalf("HandleDeleteDevice returned error: %v", err)
-	}
-
-	summary := textContent(t, result.Content[0])
-	if summary != "Deleted device ID device-1" {
-		t.Fatalf("unexpected summary %s", summary)
-	}
-
-	meta, ok := data.(map[string]string)
-	if !ok || meta["status"] != "deleted" {
-		t.Fatalf("unexpected metadata: %+v", data)
-	}
-}
-
-func TestHandleDeleteDeviceServiceError(t *testing.T) {
-	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-	})
-
-	_, _, err := handler.HandleDeleteDevice(context.Background(), nil, &DeleteDeviceParams{DeviceID: "device-1"})
-	if err == nil || !strings.Contains(err.Error(), "failed to delete device") {
-		t.Fatalf("expected delete error, got %v", err)
 	}
 }
