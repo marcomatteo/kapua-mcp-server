@@ -7,7 +7,7 @@ VERSION := 0.1.0
 
 .PHONY: run
 run:
-	./bin/$(APP)
+	./bin/$(APP) -http
 
 .PHONY: build
 build:
