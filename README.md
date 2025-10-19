@@ -115,21 +115,22 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
    - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 2. Add or update the `mcpServers` array with a stdio configuration:
-   ```json
-   {
-     "mcpServers": {
-        "kapua-mcp-server": {
-          "command": "/Users/marco/dev/git-marcomatteo/kapua-mcp-server/bin/kapua-mcp-server",
-          "args": [],
-          "env": {
-            "KAPUA_API_ENDPOINT": "https://api.kapua.io/",
-            "KAPUA_USER": "kapua-user",
-            "KAPUA_PASSWORD": "kapua-password"
-          }
-        }
-     }
+```json
+{
+  "mcpServers": {
+    "kapua-mcp-server": {
+      "command": "/Users/marco/dev/git-marcomatteo/kapua-mcp-server/bin/kapua-mcp-server",
+      "args": [],
+      "env": {
+        "KAPUA_API_ENDPOINT": "https://api.kapua.io/",
+        "KAPUA_USER": "kapua-user",
+        "KAPUA_PASSWORD": "kapua-password"
+      }
+    }
   }
-  ```
+}
+```
+
 3. Restart Claude Desktop. The Kapua tools appear under the **Servers** tab, and Claude will launch the Docker container when you connect.
 
    Replace the placeholder credential values with your Kapua settings before saving the configuration.
