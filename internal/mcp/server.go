@@ -136,16 +136,6 @@ func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandl
 		Description: "List Kapua data messages",
 	}, kapuaHandler.HandleListDataMessages)
 
-	// mcpsdk.AddTool(server, &mcpsdk.Tool{
-	// 	Name:        "kapua-update-device",
-	// 	Description: "Update an existing Kapua device",
-	// }, kapuaHandler.HandleUpdateDevice)
-
-	// mcpsdk.AddTool(server, &mcpsdk.Tool{
-	// 	Name:        "kapua-delete-device",
-	// 	Description: "Delete a Kapua device",
-	// }, kapuaHandler.HandleDeleteDevice)
-
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-configurations-read",
 		Description: "Read all configurations for a Kapua device (input: {id})",
