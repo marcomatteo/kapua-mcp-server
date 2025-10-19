@@ -114,7 +114,7 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
 1. Locate the Claude Desktop configuration file:
    - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-2. Add or update the `mcpServers` array with a stdio configuration. The example below runs the server through Docker so you do not need the binary on your host:
+2. Add or update the `mcpServers` array with a stdio configuration:
    ```json
    {
      "mcpServers": {
