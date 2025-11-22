@@ -82,20 +82,23 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 		t.Fatal("features map not found on tools registry")
 	}
 	expectedTools := []string{
-		"kapua-list-devices",
-		"kapua-list-device-events",
-		"kapua-list-device-logs",
-		"kapua-list-data-messages",
-		"kapua-configurations-read",
-		"kapua-inventory-read",
-		"kapua-inventory-bundles",
-		"kapua-inventory-bundle-start",
-		"kapua-inventory-bundle-stop",
-		"kapua-inventory-containers",
-		"kapua-inventory-container-start",
-		"kapua-inventory-container-stop",
-		"kapua-inventory-system-packages",
-		"kapua-inventory-deployment-packages",
+		"kapua-devices-list",
+		"kapua-device-events-list",
+		"kapua-device-logs-list",
+		"kapua-data-messages-list",
+		"kapua-device-configurations-read",
+		"kapua-device-snapshots-list",
+		"kapua-device-snapshot-configurations-read",
+		"kapua-device-snapshot-rollback",
+		"kapua-device-inventory-read",
+		"kapua-device-inventory-bundles-list",
+		"kapua-device-inventory-bundle-start",
+		"kapua-device-inventory-bundle-stop",
+		"kapua-device-inventory-containers-list",
+		"kapua-device-inventory-container-start",
+		"kapua-device-inventory-container-stop",
+		"kapua-device-inventory-system-packages-list",
+		"kapua-device-inventory-deployment-packages-list",
 	}
 
 	if got := featuresField.Len(); got < len(expectedTools) {

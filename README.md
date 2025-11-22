@@ -131,7 +131,7 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is ava
 }
 ```
 
-3. Restart Claude Desktop. The Kapua tools appear under the **Servers** tab, and Claude will launch the Docker container when you connect.
+3. Restart Claude Desktop. The Kapua tools appear under the **Servers** tab, and Claude will launch the MCP server with STDIO transport when you connect.
 
    Replace the placeholder credential values with your Kapua settings before saving the configuration.
 
@@ -156,31 +156,36 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 ## MCP Tools
 
 ### Device Directory
-- `kapua-list-devices` — list devices in scope using filters such as `clientId`, `status`, `matchTerm`, `limit`, `offset` (`GET /{scopeId}/devices`).
+- `kapua-devices-list` — list devices in scope using filters such as `clientId`, `status`, `matchTerm`, `limit`, `offset` (`GET /{scopeId}/devices`).
 
 ### Device Events
-- `kapua-list-device-events` — enumerate device log events with optional filters for time range, resource, pagination, and sort options (`GET /{scopeId}/devices/{deviceId}/events`).
+- `kapua-device-events-list` — enumerate device log events with optional filters for time range, resource, pagination, and sort options (`GET /{scopeId}/devices/{deviceId}/events`).
 
 ### Data Clients
-- `kapua-list-data-messages` — list data messages with optional filters (multiple `clientId`, `channel`, pagination) (`GET /{scopeId}/data/messages`).
+- `kapua-data-messages-list` — list data messages with optional filters (multiple `clientId`, `channel`, pagination) (`GET /{scopeId}/data/messages`).
 
 ### Device Logs
-- `kapua-list-device-logs` — list device logs with optional channel and property filters (`GET /{scopeId}/deviceLogs`).
+- `kapua-device-logs-list` — list device logs with optional channel and property filters (`GET /{scopeId}/deviceLogs`).
   - _Availability:_ This tool requires an Eurotech Everyware Cloud endpoint; open-source Kapua deployments do not expose `/deviceLogs` and the tool will return guidance instead of data.
 
 ### Device Configuration
-- `kapua-configurations-read` — retrieve all component configurations for a device (`GET /{scopeId}/devices/{deviceId}/configurations`).
+- `kapua-device-configurations-read` — retrieve all component configurations for a device (`GET /{scopeId}/devices/{deviceId}/configurations`).
+
+### Device Snapshots
+- `kapua-device-snapshots-list` — list snapshots available on a device (`GET /{scopeId}/devices/{deviceId}/snapshots`).
+- `kapua-device-snapshot-configurations-read` — retrieve component configurations stored within a snapshot (`GET /{scopeId}/devices/{deviceId}/snapshots/{snapshotId}`).
+- `kapua-device-snapshot-rollback` — request a rollback of the device to a snapshot (`POST /{scopeId}/devices/{deviceId}/snapshots/{snapshotId}/_rollback`).
 
 ### Device Inventory
-- `kapua-inventory-read` — fetch general inventory details for a device (`GET /{scopeId}/devices/{deviceId}/inventory`).
-- `kapua-inventory-bundles` — list bundles in the device inventory (`GET /{scopeId}/devices/{deviceId}/inventory/bundles`).
-- `kapua-inventory-bundle-start` — trigger bundle inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/bundles/_start`).
-- `kapua-inventory-bundle-stop` — stop bundle inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/bundles/_stop`).
-- `kapua-inventory-containers` — list container inventory entries (`GET /{scopeId}/devices/{deviceId}/inventory/containers`).
-- `kapua-inventory-container-start` — trigger container inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/containers/_start`).
-- `kapua-inventory-container-stop` — stop container inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/containers/_stop`).
-- `kapua-inventory-system-packages` — list device system packages (`GET /{scopeId}/devices/{deviceId}/inventory/system`).
-- `kapua-inventory-deployment-packages` — list deployment packages (`GET /{scopeId}/devices/{deviceId}/inventory/packages`).
+- `kapua-device-inventory-read` — fetch general inventory details for a device (`GET /{scopeId}/devices/{deviceId}/inventory`).
+- `kapua-device-inventory-bundles-list` — list bundles in the device inventory (`GET /{scopeId}/devices/{deviceId}/inventory/bundles`).
+- `kapua-device-inventory-bundle-start` — trigger bundle inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/bundles/_start`).
+- `kapua-device-inventory-bundle-stop` — stop bundle inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/bundles/_stop`).
+- `kapua-device-inventory-containers-list` — list container inventory entries (`GET /{scopeId}/devices/{deviceId}/inventory/containers`).
+- `kapua-device-inventory-container-start` — trigger container inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/containers/_start`).
+- `kapua-device-inventory-container-stop` — stop container inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/containers/_stop`).
+- `kapua-device-inventory-system-packages-list` — list device system packages (`GET /{scopeId}/devices/{deviceId}/inventory/system`).
+- `kapua-device-inventory-deployment-packages-list` — list deployment packages (`GET /{scopeId}/devices/{deviceId}/inventory/packages`).
 
 ## MCP Resources
 - `kapua://devices` — discoverable via MCP `resources/list` and readable through `resources/read`; returns JSON with up to 100 devices for the default scope `AQ` (`application/json`).
@@ -190,6 +195,7 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
   - `ListDeviceLogs` → `GET /{scopeId}/deviceLogs`
   - `ListDataMessages` → `GET /{scopeId}/data/messages` (supports multiple `clientId` query parameters)
   - `GetDataMessage` → `GET /{scopeId}/data/messages/{datastoreMessageId}`
+  - `ListDeviceSnapshots` / `ReadDeviceSnapshotConfigurations` / `RollbackDeviceSnapshot` → `GET /{scopeId}/devices/{deviceId}/snapshots`, `GET /{scopeId}/devices/{deviceId}/snapshots/{snapshotId}`, `POST /{scopeId}/devices/{deviceId}/snapshots/{snapshotId}/_rollback`
 - Each helper accepts common pagination parameters and surfaces Kapua errors for precise handling.
 - Extend these helpers with additional MCP endpoints whenever new Kapua features are needed.
 
