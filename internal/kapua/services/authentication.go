@@ -101,14 +101,9 @@ func (c *KapuaClient) refreshTokenIfNeeded(ctx context.Context) error {
 func (c *KapuaClient) AuthenticateUser(ctx context.Context, credentials models.UsernamePasswordCredentials) (*models.AccessToken, error) {
 	c.logger.Info("Authenticating user: %s", credentials.Username)
 
-	resp, err := c.makeRequest(ctx, http.MethodPost, "/authentication/user", credentials)
-	if err != nil {
-		return nil, fmt.Errorf("authentication request failed: %w", err)
-	}
-
 	var token models.AccessToken
-	if err := c.handleResponse(resp, &token); err != nil {
-		return nil, fmt.Errorf("authentication failed: %w", err)
+	if err := c.doKapuaRequest(ctx, http.MethodPost, "/authentication/user", "authenticate user", credentials, &token); err != nil {
+		return nil, err
 	}
 
 	// Store the token information for subsequent requests
@@ -122,14 +117,9 @@ func (c *KapuaClient) AuthenticateUser(ctx context.Context, credentials models.U
 func (c *KapuaClient) AuthenticateAPIKey(ctx context.Context, credentials models.APIKeyCredentials) (*models.AccessToken, error) {
 	c.logger.Info("Authenticating with API key")
 
-	resp, err := c.makeRequest(ctx, http.MethodPost, "/authentication/apikey", credentials)
-	if err != nil {
-		return nil, fmt.Errorf("API key authentication request failed: %w", err)
-	}
-
 	var token models.AccessToken
-	if err := c.handleResponse(resp, &token); err != nil {
-		return nil, fmt.Errorf("API key authentication failed: %w", err)
+	if err := c.doKapuaRequest(ctx, http.MethodPost, "/authentication/apikey", "authenticate API key", credentials, &token); err != nil {
+		return nil, err
 	}
 
 	// Store the token information for subsequent requests
@@ -143,14 +133,9 @@ func (c *KapuaClient) AuthenticateAPIKey(ctx context.Context, credentials models
 func (c *KapuaClient) AuthenticateJWT(ctx context.Context, credentials models.JWTCredentials) (*models.AccessToken, error) {
 	c.logger.Info("Authenticating with JWT")
 
-	resp, err := c.makeRequest(ctx, http.MethodPost, "/authentication/jwt", credentials)
-	if err != nil {
-		return nil, fmt.Errorf("JWT authentication request failed: %w", err)
-	}
-
 	var token models.AccessToken
-	if err := c.handleResponse(resp, &token); err != nil {
-		return nil, fmt.Errorf("JWT authentication failed: %w", err)
+	if err := c.doKapuaRequest(ctx, http.MethodPost, "/authentication/jwt", "authenticate JWT", credentials, &token); err != nil {
+		return nil, err
 	}
 
 	// Store the token information for subsequent requests
@@ -164,14 +149,9 @@ func (c *KapuaClient) AuthenticateJWT(ctx context.Context, credentials models.JW
 func (c *KapuaClient) RefreshToken(ctx context.Context, request models.RefreshTokenRequest) (*models.AccessToken, error) {
 	c.logger.Info("Refreshing access token")
 
-	resp, err := c.makeRequest(ctx, http.MethodPost, "/authentication/refresh", request)
-	if err != nil {
-		return nil, fmt.Errorf("token refresh request failed: %w", err)
-	}
-
 	var token models.AccessToken
-	if err := c.handleResponse(resp, &token); err != nil {
-		return nil, fmt.Errorf("token refresh failed: %w", err)
+	if err := c.doKapuaRequest(ctx, http.MethodPost, "/authentication/refresh", "refresh token", request, &token); err != nil {
+		return nil, err
 	}
 
 	// Store the new token information for subsequent requests
@@ -189,14 +169,9 @@ func (c *KapuaClient) GetLoginInfo(ctx context.Context) (*models.LoginInfo, erro
 		return nil, fmt.Errorf("no authentication token available")
 	}
 
-	resp, err := c.makeRequest(ctx, http.MethodGet, "/authentication/info", nil)
-	if err != nil {
-		return nil, fmt.Errorf("login info request failed: %w", err)
-	}
-
 	var loginInfo models.LoginInfo
-	if err := c.handleResponse(resp, &loginInfo); err != nil {
-		return nil, fmt.Errorf("failed to retrieve login info: %w", err)
+	if err := c.doKapuaRequest(ctx, http.MethodGet, "/authentication/info", "retrieve login info", nil, &loginInfo); err != nil {
+		return nil, err
 	}
 
 	c.logger.Info("Login information retrieved successfully")
@@ -211,13 +186,8 @@ func (c *KapuaClient) Logout(ctx context.Context) error {
 		return fmt.Errorf("no authentication token available")
 	}
 
-	resp, err := c.makeRequest(ctx, http.MethodPost, "/authentication/logout", nil)
-	if err != nil {
-		return fmt.Errorf("logout request failed: %w", err)
-	}
-
-	if err := c.handleResponse(resp, nil); err != nil {
-		return fmt.Errorf("logout failed: %w", err)
+	if err := c.doKapuaRequest(ctx, http.MethodPost, "/authentication/logout", "logout", nil, nil); err != nil {
+		return err
 	}
 
 	// Clear the stored token

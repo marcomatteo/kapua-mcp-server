@@ -311,7 +311,7 @@ func TestAuthenticateUserRequestFailure(t *testing.T) {
 	})}
 
 	_, err := client.AuthenticateUser(context.Background(), models.UsernamePasswordCredentials{Username: "kapua-sys", Password: "kapua-password"})
-	if err == nil || !strings.Contains(err.Error(), "authentication request failed") {
+	if err == nil || !strings.Contains(err.Error(), "authenticate user request failed") {
 		t.Fatalf("expected wrapped request error, got %v", err)
 	}
 }

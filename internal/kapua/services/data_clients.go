@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -65,19 +64,14 @@ func (c *KapuaClient) ListDataMessages(ctx context.Context, query *DataMessagesQ
 
 	params := query.toValues()
 
-	endpoint := fmt.Sprintf("/%s/data/messages", c.scopeId)
+	endpoint := c.scopedEndpoint("/data/messages")
 	if encoded := params.Encode(); encoded != "" {
 		endpoint += "?" + encoded
 	}
 
-	resp, err := c.makeRequest(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, fmt.Errorf("list data messages request failed: %w", err)
-	}
-
 	var result models.DataMessageListResult
-	if err := c.handleResponse(resp, &result); err != nil {
-		return nil, fmt.Errorf("failed to list data messages: %w", err)
+	if err := c.doKapuaRequest(ctx, http.MethodGet, endpoint, "list data messages", nil, &result); err != nil {
+		return nil, err
 	}
 
 	c.logger.Info("Listed %d data messages successfully", len(result.Items))
