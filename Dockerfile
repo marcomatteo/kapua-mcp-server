@@ -28,13 +28,13 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -ldflags="-s -w" -o /out/kapua-mcp-server ./cmd/server
 
 # Runtime stage
-FROM gcr.io/distroless/base-debian12:nonroot
-WORKDIR /app
+FROM scratch as release-slim
 
 # Copy binary and TLS certificates
 COPY --from=builder /out/kapua-mcp-server /app/kapua-mcp-server
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8000
+WORKDIR /app
 ENTRYPOINT ["/app/kapua-mcp-server"]
 CMD ["-http", "--host", "0.0.0.0", "--port", "8000"]
