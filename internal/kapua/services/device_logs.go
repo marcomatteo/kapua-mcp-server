@@ -82,7 +82,7 @@ func (c *KapuaClient) ListDeviceLogs(ctx context.Context, query *DeviceLogsQuery
 
 	params := query.toValues()
 
-	endpoint := fmt.Sprintf("/%s/deviceLogs", c.scopeId)
+	endpoint := c.scopedEndpoint("/deviceLogs")
 	if encoded := params.Encode(); encoded != "" {
 		endpoint += "?" + encoded
 	}

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/url"
 
@@ -23,19 +22,14 @@ func (c *KapuaClient) ListDeviceEvents(ctx context.Context, deviceID string, par
 		}
 	}
 
-	endpoint := fmt.Sprintf("/%s/devices/%s/events", c.scopeId, deviceID)
+	endpoint := c.scopedEndpoint("/devices/%s/events", deviceID)
 	if encoded := query.Encode(); encoded != "" {
 		endpoint += "?" + encoded
 	}
 
-	resp, err := c.makeRequest(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, fmt.Errorf("list device events request failed: %w", err)
-	}
-
 	var result models.DeviceEventListResult
-	if err := c.handleResponse(resp, &result); err != nil {
-		return nil, fmt.Errorf("failed to list device events: %w", err)
+	if err := c.doKapuaRequest(ctx, http.MethodGet, endpoint, "list device events", nil, &result); err != nil {
+		return nil, err
 	}
 
 	c.logger.Info("Retrieved %d device events", len(result.Items))

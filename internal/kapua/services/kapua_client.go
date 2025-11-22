@@ -126,3 +126,24 @@ func (c *KapuaClient) handleResponse(resp *http.Response, result interface{}) er
 
 	return nil
 }
+
+// scopedEndpoint builds an endpoint path that automatically prefixes the client's scope ID.
+// pathTemplate should start with "/" and may include additional formatting verbs for args.
+func (c *KapuaClient) scopedEndpoint(pathTemplate string, args ...interface{}) string {
+	return fmt.Sprintf("/%s"+pathTemplate, append([]interface{}{c.scopeId}, args...)...)
+}
+
+// doKapuaRequest wraps makeRequest and handleResponse, applying consistent error wrapping.
+// action should describe the operation, e.g., "list devices" or "authenticate user".
+func (c *KapuaClient) doKapuaRequest(ctx context.Context, method, endpoint, action string, body interface{}, out interface{}) error {
+	resp, err := c.makeRequest(ctx, method, endpoint, body)
+	if err != nil {
+		return fmt.Errorf("%s request failed: %w", action, err)
+	}
+
+	if err := c.handleResponse(resp, out); err != nil {
+		return fmt.Errorf("failed to %s: %w", action, err)
+	}
+
+	return nil
+}
