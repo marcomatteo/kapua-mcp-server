@@ -47,9 +47,16 @@ func TestReadResourceDevicesSuccess(t *testing.T) {
 		if limit := r.URL.Query().Get("limit"); limit != "100" {
 			t.Fatalf("expected limit=100, got %s", limit)
 		}
+		if offset := r.URL.Query().Get("offset"); offset != "0" {
+			t.Fatalf("expected offset=0, got %s", offset)
+		}
+		if ask := r.URL.Query().Get("askTotalCount"); ask != "true" {
+			t.Fatalf("expected askTotalCount=true, got %s", ask)
+		}
 		result := models.DeviceListResult{
-			Items: []models.Device{{KapuaEntity: models.KapuaEntity{ID: models.KapuaID("device-1")}, ClientID: "client-1"}},
-			Size:  1,
+			Items:      []models.Device{{KapuaEntity: models.KapuaEntity{ID: models.KapuaID("device-1")}, ClientID: "client-1"}},
+			Size:       1,
+			TotalCount: 1,
 		}
 		body, err := json.Marshal(result)
 		if err != nil {
@@ -78,6 +85,9 @@ func TestReadResourceDevicesSuccess(t *testing.T) {
 	devices, ok := payload["devices"].([]any)
 	if !ok || len(devices) != 1 {
 		t.Fatalf("expected one device entry, got %+v", payload["devices"])
+	}
+	if processed, ok := payload["processed_count"].(float64); !ok || processed != 1 {
+		t.Fatalf("expected processed_count 1, got %v", payload["processed_count"])
 	}
 	if _, err := strconv.ParseInt(payload["last_updated"].(string), 10, 64); err != nil {
 		t.Fatalf("expected numeric last_updated, got %v", payload["last_updated"])

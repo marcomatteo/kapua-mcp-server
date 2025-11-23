@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"kapua-mcp-server/internal/kapua/models"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+
+	"kapua-mcp-server/internal/kapua/models"
 )
+
+const deviceResourcePageSize = 200
 
 // Device Management Tool Parameters
 
@@ -91,23 +95,60 @@ func (h *KapuaHandler) HandleListDevices(ctx context.Context, req *mcp.CallToolR
 }
 
 // readDevicesResource returns all devices as a JSON resource
-func (h *KapuaHandler) readDevicesResource(ctx context.Context) (*mcp.ReadResourceResult, error) {
-	// Get all devices with reasonable defaults
-	queryParams := map[string]string{
-		"limit": "100", // Reasonable limit for resource view
+func (h *KapuaHandler) readDevicesResource(ctx context.Context, uri *url.URL) (*mcp.ReadResourceResult, error) {
+	limit := 100
+	if uri != nil {
+		if parsedLimit, err := strconv.Atoi(uri.Query().Get("limit")); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
 	}
 
-	result, err := h.client.ListDevices(ctx, queryParams)
-	if err != nil {
-		h.logger.Error("Failed to read devices resource: %v", err)
-		return nil, fmt.Errorf("failed to read devices resource: %w", err)
+	var devices []models.Device
+	offset := 0
+	totalCount := 0
+
+	for len(devices) < limit {
+		pageSize := limit - len(devices)
+		if pageSize > deviceResourcePageSize {
+			pageSize = deviceResourcePageSize
+		}
+		queryParams := map[string]string{
+			"limit":         strconv.Itoa(pageSize),
+			"offset":        strconv.Itoa(offset),
+			"askTotalCount": "true",
+		}
+
+		result, err := h.client.ListDevices(ctx, queryParams)
+		if err != nil {
+			h.logger.Error("Failed to read devices resource: %v", err)
+			return nil, fmt.Errorf("failed to read devices resource: %w", err)
+		}
+
+		if totalCount == 0 {
+			totalCount = result.TotalCount
+		}
+
+		devices = append(devices, result.Items...)
+
+		if len(result.Items) == 0 || len(result.Items) < pageSize {
+			break
+		}
+		offset += len(result.Items)
 	}
 
-	// Create a structured resource response
+	if totalCount == 0 {
+		totalCount = len(devices)
+	}
+
 	resourceData := map[string]interface{}{
-		"total_count":  len(result.Items),
-		"devices":      result.Items,
-		"last_updated": fmt.Sprintf("%d", time.Now().Unix()),
+		"total_count":     totalCount,
+		"processed_count": len(devices),
+		"devices":         devices,
+		"last_updated":    fmt.Sprintf("%d", time.Now().Unix()),
+	}
+
+	if totalCount > len(devices) {
+		resourceData["warnings"] = []string{fmt.Sprintf("processed %d of %d devices; increase limit to fetch all", len(devices), totalCount)}
 	}
 
 	jsonData, err := json.MarshalIndent(resourceData, "", "  ")
