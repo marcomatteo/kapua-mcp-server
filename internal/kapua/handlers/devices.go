@@ -108,9 +108,6 @@ func (h *KapuaHandler) readDevicesResource(ctx context.Context, uri *url.URL) (*
 	targetCount := limitParam // <=0 means fetch all
 
 	for {
-		if targetCount > 0 && len(devices) >= targetCount {
-			break
-		}
 
 		pageSize := deviceResourcePageSize
 		if targetCount > 0 {
