@@ -50,6 +50,13 @@ func NewKapuaClient(cfg *config.KapuaConfig) *KapuaClient {
 	}
 }
 
+// SetHTTPClient overrides the underlying HTTP client (used by tests to avoid network calls).
+func (c *KapuaClient) SetHTTPClient(client *http.Client) {
+	if client != nil {
+		c.httpClient = client
+	}
+}
+
 // makeRequest performs an HTTP request to the Kapua API
 func (c *KapuaClient) makeRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
 	url := c.baseURL + endpoint

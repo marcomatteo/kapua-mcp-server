@@ -189,6 +189,7 @@ The coverage report commands reuse the `coverage.out` file produced in the previ
 
 ## MCP Resources
 - `kapua://devices` — discoverable via MCP `resources/list` and readable through `resources/read`; returns JSON with up to 100 devices for the default scope `AQ` (`application/json`).
+- `kapua://fleet-health` — aggregated snapshot with online/offline counts, stale devices (based on last event/connection older than `staleMinutes`, default `60`), and devices with recent critical events (`criticalMinutes`, default `60`). Tunables: `limit` (device page size), `staleMinutes`, `criticalMinutes`.
 
 ## Kapua Client Helpers
 - Kapua client helpers exposed by `KapuaClient` back the MCP tools listed above:

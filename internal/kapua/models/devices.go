@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // Device Management Models
 
 // DeviceStatus represents the status of a device
@@ -26,9 +28,11 @@ type Device struct {
 	GroupID                     KapuaID                  `json:"groupId,omitempty"`
 	ClientID                    string                   `json:"clientId,omitempty"`
 	ConnectionID                KapuaID                  `json:"connectionId,omitempty"`
+	Connection                  *DeviceConnection        `json:"connection,omitempty"`
 	Status                      DeviceStatus             `json:"status,omitempty"`
 	DisplayName                 string                   `json:"displayName,omitempty"`
 	LastEventID                 KapuaID                  `json:"lastEventId,omitempty"`
+	LastEvent                   *DeviceEvent             `json:"lastEvent,omitempty"`
 	SerialNumber                string                   `json:"serialNumber,omitempty"`
 	ModelID                     string                   `json:"modelId,omitempty"`
 	ModelName                   string                   `json:"modelName,omitempty"`
@@ -52,6 +56,15 @@ type Device struct {
 	CustomAttribute5            string                   `json:"customAttribute5,omitempty"`
 	ExtendedProperties          []DeviceExtendedProperty `json:"extendedProperties,omitempty"`
 	TagIDs                      []KapuaID                `json:"tagIds,omitempty"`
+}
+
+// DeviceConnection captures the current connection state reported for a device.
+type DeviceConnection struct {
+	KapuaID    KapuaID          `json:"id,omitempty"`
+	Status     ConnectionStatus `json:"status,omitempty"`
+	ClientID   string           `json:"clientId,omitempty"`
+	CreatedOn  *time.Time       `json:"createdOn,omitempty"`
+	ModifiedOn *time.Time       `json:"modifiedOn,omitempty"`
 }
 
 // DeviceExtendedProperty represents extended properties of a device
