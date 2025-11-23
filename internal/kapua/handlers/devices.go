@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"kapua-mcp-server/internal/kapua/models"
 	"net/url"
 	"strconv"
 
@@ -96,27 +95,34 @@ func (h *KapuaHandler) HandleListDevices(ctx context.Context, req *mcp.CallToolR
 
 // readDevicesResource returns all devices as a JSON resource
 func (h *KapuaHandler) readDevicesResource(ctx context.Context, uri *url.URL) (*mcp.ReadResourceResult, error) {
-	// Get all devices with reasonable defaults
-	limit := 100
+	limitParam := 0
 	if uri != nil {
 		if parsedLimit, err := strconv.Atoi(uri.Query().Get("limit")); err == nil && parsedLimit > 0 {
-			limit = parsedLimit
+			limitParam = parsedLimit
 		}
-	}
-
-	queryParams := map[string]string{
-		"limit": strconv.Itoa(limit), // Reasonable limit for resource view
 	}
 
 	var devices []models.Device
 	offset := 0
 	totalCount := 0
+	targetCount := limitParam // <=0 means fetch all
 
-	for len(devices) < limit {
-		pageSize := limit - len(devices)
-		if pageSize > deviceResourcePageSize {
-			pageSize = deviceResourcePageSize
+	for {
+		if targetCount > 0 && len(devices) >= targetCount {
+			break
 		}
+
+		pageSize := deviceResourcePageSize
+		if targetCount > 0 {
+			remaining := targetCount - len(devices)
+			if remaining <= 0 {
+				break
+			}
+			if remaining < pageSize {
+				pageSize = remaining
+			}
+		}
+
 		queryParams := map[string]string{
 			"limit":         strconv.Itoa(pageSize),
 			"offset":        strconv.Itoa(offset),
@@ -146,9 +152,10 @@ func (h *KapuaHandler) readDevicesResource(ctx context.Context, uri *url.URL) (*
 	}
 
 	resourceData := map[string]interface{}{
-		"total_count":  len(result.Items),
-		"devices":      result.Items,
-		"last_updated": fmt.Sprintf("%d", timeNow().Unix()),
+		"total_count":     totalCount,
+		"processed_count": len(devices),
+		"devices":         devices,
+		"last_updated":    fmt.Sprintf("%d", timeNow().Unix()),
 	}
 
 	jsonData, err := json.MarshalIndent(resourceData, "", "  ")

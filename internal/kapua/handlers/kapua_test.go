@@ -44,8 +44,8 @@ func TestReadResourceDevicesSuccess(t *testing.T) {
 		if r.URL.Path != "/v1/tenant/devices" {
 			t.Fatalf("unexpected path %s", r.URL.Path)
 		}
-		if limit := r.URL.Query().Get("limit"); limit != "100" {
-			t.Fatalf("expected limit=100, got %s", limit)
+		if limit := r.URL.Query().Get("limit"); limit != "200" {
+			t.Fatalf("expected limit=200, got %s", limit)
 		}
 		if offset := r.URL.Query().Get("offset"); offset != "0" {
 			t.Fatalf("expected offset=0, got %s", offset)
