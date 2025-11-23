@@ -222,3 +222,67 @@ func TestKapuaClientHandleResponseSuccessInvalidJSON(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestKapuaClientDoKapuaRequestPagination(t *testing.T) {
+	client := &KapuaClient{
+		baseURL:     "http://example.com/v1",
+		logger:      utils.NewDefaultLogger("test"),
+		autoRefresh: false,
+	}
+
+	responses := []struct {
+		expectedOffset string
+		body           string
+	}{
+		{
+			expectedOffset: "0",
+			body:           `{"limitExceeded":true,"size":2,"items":[{"clientId":"a"},{"clientId":"b"}]}`,
+		},
+		{
+			expectedOffset: "2",
+			body:           `{"limitExceeded":false,"size":1,"items":[{"clientId":"c"}]}`,
+		},
+	}
+
+	requestCount := 0
+	client.httpClient = &http.Client{
+		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+			if requestCount >= len(responses) {
+				t.Fatalf("unexpected extra request %d", requestCount)
+			}
+
+			respCfg := responses[requestCount]
+			query := req.URL.Query()
+			if got := query.Get("offset"); got != respCfg.expectedOffset {
+				t.Fatalf("request %d: expected offset %s, got %s", requestCount, respCfg.expectedOffset, got)
+			}
+			if got := query.Get("limit"); got != "2" {
+				t.Fatalf("request %d: expected limit 2, got %s", requestCount, got)
+			}
+
+			requestCount++
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(respCfg.body)),
+				Header:     make(http.Header),
+			}, nil
+		}),
+	}
+
+	var out models.DeviceListResult
+	if err := client.doKapuaRequest(context.Background(), http.MethodGet, "/devices?limit=2&offset=0", "list devices", nil, &out); err != nil {
+		t.Fatalf("doKapuaRequest returned error: %v", err)
+	}
+
+	if requestCount != len(responses) {
+		t.Fatalf("expected %d requests, got %d", len(responses), requestCount)
+	}
+
+	if len(out.Items) != 3 {
+		t.Fatalf("expected 3 aggregated devices, got %d", len(out.Items))
+	}
+
+	if out.Size != 3 {
+		t.Fatalf("expected size updated to 3, got %d", out.Size)
+	}
+}

@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -152,5 +155,124 @@ func (c *KapuaClient) doKapuaRequest(ctx context.Context, method, endpoint, acti
 		return fmt.Errorf("failed to %s: %w", action, err)
 	}
 
+	if err := c.paginateKapuaRequest(ctx, method, endpoint, action, body, out); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+// paginateKapuaRequest follows Kapua pagination if the response signals there are more items available.
+// Pagination is driven by the `limitExceeded` flag described in specs/kapua_openapi.yaml and the `offset`
+// and `limit` query parameters referenced throughout the spec (default limit is 50, offset is 0).
+func (c *KapuaClient) paginateKapuaRequest(ctx context.Context, method, endpoint, action string, body interface{}, out interface{}) error {
+	if out == nil || method != http.MethodGet {
+		return nil
+	}
+
+	items, setItems, limitExceeded, sizeField, ok := paginationFields(out)
+	if !ok || !limitExceeded {
+		return nil
+	}
+
+	endpointURL, err := url.Parse(endpoint)
+	if err != nil {
+		return fmt.Errorf("%s request failed: %w", action, err)
+	}
+
+	query := endpointURL.Query()
+	const defaultLimit = 50
+	limit := parseQueryInt(query.Get("limit"), defaultLimit)
+	offset := parseQueryInt(query.Get("offset"), 0)
+	nextOffset := offset + items.Len()
+
+	for limitExceeded {
+		query.Set("offset", strconv.Itoa(nextOffset))
+		endpointURL.RawQuery = query.Encode()
+
+		temp := reflect.New(reflect.TypeOf(out).Elem()).Interface()
+		resp, reqErr := c.makeRequest(ctx, method, endpointURL.String(), body)
+		if reqErr != nil {
+			return fmt.Errorf("%s request failed: %w", action, reqErr)
+		}
+
+		if err := c.handleResponse(resp, temp); err != nil {
+			return fmt.Errorf("failed to %s: %w", action, err)
+		}
+
+		pageItems, _, pageLimitExceeded, pageSizeField, ok := paginationFields(temp)
+		if !ok {
+			return fmt.Errorf("failed to %s: pagination response missing expected fields", action)
+		}
+
+		if pageItems.Len() == 0 {
+			break
+		}
+
+		items = reflect.AppendSlice(items, pageItems)
+		setItems(items)
+		if sizeField.IsValid() {
+			sizeField.SetInt(int64(items.Len()))
+		}
+		if pageSizeField.IsValid() {
+			pageSizeField.SetInt(int64(items.Len()))
+		}
+
+		limitExceeded = pageLimitExceeded
+		nextOffset += pageItems.Len()
+
+		// Guard against zero limit to avoid infinite loops; fall back to default from spec.
+		if limit <= 0 {
+			limit = defaultLimit
+		}
+	}
+
+	return nil
+}
+
+// paginationFields returns the Items slice and LimitExceeded flag from a Kapua list result structure.
+func paginationFields(out interface{}) (items reflect.Value, setItems func(reflect.Value), limitExceeded bool, sizeField reflect.Value, ok bool) {
+	val := reflect.ValueOf(out)
+	if val.Kind() != reflect.Ptr || val.IsNil() {
+		return
+	}
+
+	elem := val.Elem()
+	if elem.Kind() != reflect.Struct {
+		return
+	}
+
+	limitField := elem.FieldByName("LimitExceeded")
+	itemsField := elem.FieldByName("Items")
+	sizeField = elem.FieldByName("Size")
+
+	if !limitField.IsValid() || !itemsField.IsValid() || limitField.Kind() != reflect.Bool || itemsField.Kind() != reflect.Slice {
+		return
+	}
+
+	items = itemsField
+	limitExceeded = limitField.Bool()
+	ok = true
+	if itemsField.CanSet() {
+		setItems = func(v reflect.Value) {
+			itemsField.Set(v)
+		}
+	} else {
+		setItems = func(_ reflect.Value) {}
+	}
+
+	return
+}
+
+func parseQueryInt(value string, defaultValue int) int {
+	if value == "" {
+		return defaultValue
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+
+	return parsed
 }
