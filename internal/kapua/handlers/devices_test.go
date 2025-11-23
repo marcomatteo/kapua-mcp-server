@@ -4,25 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"kapua-mcp-server/internal/kapua/config"
 	"kapua-mcp-server/internal/kapua/models"
-	"kapua-mcp-server/internal/kapua/services"
-	"kapua-mcp-server/pkg/utils"
 )
 
 func newDeviceHandler(t *testing.T, fn http.HandlerFunc) *KapuaHandler {
-	t.Helper()
-	ts := httptest.NewServer(fn)
-	t.Cleanup(ts.Close)
-	client := services.NewKapuaClient(&config.KapuaConfig{APIEndpoint: ts.URL, Timeout: 5})
-	client.SetTokenInfo(&models.AccessToken{KapuaEntity: models.KapuaEntity{ScopeID: models.KapuaID("tenant")}})
-	return &KapuaHandler{client: client, logger: utils.NewDefaultLogger("KapuaDeviceHandlerTest")}
+	return newKapuaTestHandler(t, fn, "KapuaDeviceHandlerTest")
 }
 
 func textContent(t *testing.T, content mcp.Content) string {

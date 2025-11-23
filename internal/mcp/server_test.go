@@ -18,20 +18,36 @@ import (
 	"kapua-mcp-server/pkg/utils"
 )
 
-func TestNewServerSuccess(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch {
-		case r.URL.Path == "/v1/authentication/user":
-			io.WriteString(w, `{"tokenId":"token","refreshToken":"refresh","expiresOn":"2025-01-02T15:04:05Z","refreshExpiresOn":"2025-01-03T15:04:05Z","scopeId":"tenant"}`)
-		case strings.HasSuffix(r.URL.Path, "/devices"):
-			io.WriteString(w, `{"items":[]}`)
-		default:
-			t.Fatalf("unexpected path %s", r.URL.Path)
-		}
-	}))
-	defer ts.Close()
+type handlerRoundTripper struct {
+	handler http.Handler
+}
 
-	cfg := &config.Config{Kapua: config.KapuaConfig{APIEndpoint: ts.URL, Timeout: 5}}
+func (rt handlerRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	recorder := httptest.NewRecorder()
+	rt.handler.ServeHTTP(recorder, req)
+	return recorder.Result(), nil
+}
+
+func TestNewServerSuccess(t *testing.T) {
+	kapuaClientFactory = func(cfg *config.KapuaConfig) *services.KapuaClient {
+		client := services.NewKapuaClient(cfg)
+		client.SetHTTPClient(&http.Client{
+			Transport: handlerRoundTripper{handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch {
+				case r.URL.Path == "/v1/authentication/user":
+					io.WriteString(w, `{"tokenId":"token","refreshToken":"refresh","expiresOn":"2025-01-02T15:04:05Z","refreshExpiresOn":"2025-01-03T15:04:05Z","scopeId":"tenant"}`)
+				case strings.HasSuffix(r.URL.Path, "/devices"):
+					io.WriteString(w, `{"items":[]}`)
+				default:
+					t.Fatalf("unexpected path %s", r.URL.Path)
+				}
+			})},
+		})
+		return client
+	}
+	defer func() { kapuaClientFactory = services.NewKapuaClient }()
+
+	cfg := &config.Config{Kapua: config.KapuaConfig{APIEndpoint: "http://kapua.test", Timeout: 5}}
 
 	srv, err := NewServer(context.Background(), cfg)
 	if err != nil {
@@ -43,13 +59,19 @@ func TestNewServerSuccess(t *testing.T) {
 }
 
 func TestNewServerAuthFailure(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-		io.WriteString(w, `{"code":"ERR"}`)
-	}))
-	defer ts.Close()
+	kapuaClientFactory = func(cfg *config.KapuaConfig) *services.KapuaClient {
+		client := services.NewKapuaClient(cfg)
+		client.SetHTTPClient(&http.Client{
+			Transport: handlerRoundTripper{handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusUnauthorized)
+				io.WriteString(w, `{"code":"ERR"}`)
+			})},
+		})
+		return client
+	}
+	defer func() { kapuaClientFactory = services.NewKapuaClient }()
 
-	cfg := &config.Config{Kapua: config.KapuaConfig{APIEndpoint: ts.URL, Timeout: 5}}
+	cfg := &config.Config{Kapua: config.KapuaConfig{APIEndpoint: "http://kapua.test", Timeout: 5}}
 
 	_, err := NewServer(context.Background(), cfg)
 	if err == nil {

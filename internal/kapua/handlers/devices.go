@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"kapua-mcp-server/internal/kapua/models"
 	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -96,11 +96,16 @@ func (h *KapuaHandler) HandleListDevices(ctx context.Context, req *mcp.CallToolR
 
 // readDevicesResource returns all devices as a JSON resource
 func (h *KapuaHandler) readDevicesResource(ctx context.Context, uri *url.URL) (*mcp.ReadResourceResult, error) {
+	// Get all devices with reasonable defaults
 	limit := 100
 	if uri != nil {
 		if parsedLimit, err := strconv.Atoi(uri.Query().Get("limit")); err == nil && parsedLimit > 0 {
 			limit = parsedLimit
 		}
+	}
+
+	queryParams := map[string]string{
+		"limit": strconv.Itoa(limit), // Reasonable limit for resource view
 	}
 
 	var devices []models.Device
@@ -141,14 +146,9 @@ func (h *KapuaHandler) readDevicesResource(ctx context.Context, uri *url.URL) (*
 	}
 
 	resourceData := map[string]interface{}{
-		"total_count":     totalCount,
-		"processed_count": len(devices),
-		"devices":         devices,
-		"last_updated":    fmt.Sprintf("%d", time.Now().Unix()),
-	}
-
-	if totalCount > len(devices) {
-		resourceData["warnings"] = []string{fmt.Sprintf("processed %d of %d devices; increase limit to fetch all", len(devices), totalCount)}
+		"total_count":  len(result.Items),
+		"devices":      result.Items,
+		"last_updated": fmt.Sprintf("%d", timeNow().Unix()),
 	}
 
 	jsonData, err := json.MarshalIndent(resourceData, "", "  ")

@@ -19,6 +19,8 @@ type Server struct {
 	mcpServer *mcpsdk.Server
 }
 
+var kapuaClientFactory = services.NewKapuaClient
+
 func NewServer(ctx context.Context, kapuaCfg *config.Config) (*Server, error) {
 	if ctx == nil {
 		ctx = context.Background()
@@ -30,7 +32,7 @@ func NewServer(ctx context.Context, kapuaCfg *config.Config) (*Server, error) {
 	logger := utils.NewDefaultLogger("MCPServer")
 	logger.Info("Starting Kapua MCP Server")
 
-	kapuaClient := services.NewKapuaClient(&kapuaCfg.Kapua)
+	kapuaClient := kapuaClientFactory(&kapuaCfg.Kapua)
 
 	logger.Info("Authenticating to Kapua on startup...")
 	if _, err := kapuaClient.QuickAuthenticate(ctx); err != nil {
@@ -193,6 +195,15 @@ func registerKapuaResources(server *mcpsdk.Server, kapuaHandler *handlers.KapuaH
 		URI:         "kapua://devices",
 		Name:        "Kapua Devices",
 		Description: "Live list of Kapua IoT devices",
+		MIMEType:    "application/json",
+	}, func(ctx context.Context, req *mcpsdk.ReadResourceRequest) (*mcpsdk.ReadResourceResult, error) {
+		return kapuaHandler.ReadResource(ctx, req.Params.URI)
+	})
+
+	server.AddResource(&mcpsdk.Resource{
+		URI:         "kapua://fleet-health",
+		Name:        "Kapua Fleet Health",
+		Description: "Aggregated fleet health snapshot",
 		MIMEType:    "application/json",
 	}, func(ctx context.Context, req *mcpsdk.ReadResourceRequest) (*mcpsdk.ReadResourceResult, error) {
 		return kapuaHandler.ReadResource(ctx, req.Params.URI)
