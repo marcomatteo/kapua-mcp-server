@@ -4,23 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"kapua-mcp-server/internal/kapua/config"
 	"kapua-mcp-server/internal/kapua/models"
-	"kapua-mcp-server/internal/kapua/services"
 	"kapua-mcp-server/pkg/utils"
 )
 
 func newConfigHandler(t *testing.T, fn http.HandlerFunc) *KapuaHandler {
-	t.Helper()
-	ts := httptest.NewServer(fn)
-	t.Cleanup(ts.Close)
-	client := services.NewKapuaClient(&config.KapuaConfig{APIEndpoint: ts.URL, Timeout: 5})
-	client.SetTokenInfo(&models.AccessToken{KapuaEntity: models.KapuaEntity{ScopeID: models.KapuaID("tenant")}})
-	return &KapuaHandler{client: client, logger: utils.NewDefaultLogger("KapuaConfigHandlerTest")}
+	return newKapuaTestHandler(t, fn, "KapuaConfigHandlerTest")
 }
 
 func TestHandleDeviceConfigurationsReadSuccess(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"kapua-mcp-server/internal/kapua/models"
+	"net/url"
 	"strconv"
-	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -91,10 +91,17 @@ func (h *KapuaHandler) HandleListDevices(ctx context.Context, req *mcp.CallToolR
 }
 
 // readDevicesResource returns all devices as a JSON resource
-func (h *KapuaHandler) readDevicesResource(ctx context.Context) (*mcp.ReadResourceResult, error) {
+func (h *KapuaHandler) readDevicesResource(ctx context.Context, uri *url.URL) (*mcp.ReadResourceResult, error) {
 	// Get all devices with reasonable defaults
+	limit := 100
+	if uri != nil {
+		if parsedLimit, err := strconv.Atoi(uri.Query().Get("limit")); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+
 	queryParams := map[string]string{
-		"limit": "100", // Reasonable limit for resource view
+		"limit": strconv.Itoa(limit), // Reasonable limit for resource view
 	}
 
 	result, err := h.client.ListDevices(ctx, queryParams)
@@ -107,7 +114,7 @@ func (h *KapuaHandler) readDevicesResource(ctx context.Context) (*mcp.ReadResour
 	resourceData := map[string]interface{}{
 		"total_count":  len(result.Items),
 		"devices":      result.Items,
-		"last_updated": fmt.Sprintf("%d", time.Now().Unix()),
+		"last_updated": fmt.Sprintf("%d", timeNow().Unix()),
 	}
 
 	jsonData, err := json.MarshalIndent(resourceData, "", "  ")

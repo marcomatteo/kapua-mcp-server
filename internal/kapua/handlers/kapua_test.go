@@ -4,24 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 
-	"kapua-mcp-server/internal/kapua/config"
 	"kapua-mcp-server/internal/kapua/models"
 	"kapua-mcp-server/internal/kapua/services"
 	"kapua-mcp-server/pkg/utils"
 )
 
 func newHandlerWithServer(t *testing.T, handler http.HandlerFunc) *KapuaHandler {
-	t.Helper()
-	ts := httptest.NewServer(handler)
-	t.Cleanup(ts.Close)
-	client := services.NewKapuaClient(&config.KapuaConfig{APIEndpoint: ts.URL, Timeout: 5})
-	client.SetTokenInfo(&models.AccessToken{KapuaEntity: models.KapuaEntity{ScopeID: models.KapuaID("tenant")}})
-	return &KapuaHandler{client: client, logger: utils.NewDefaultLogger("KapuaHandlerTest")}
+	return newKapuaTestHandler(t, handler, "KapuaHandlerTest")
 }
 
 func TestNewKapuaHandlerListResources(t *testing.T) {
@@ -31,11 +24,18 @@ func TestNewKapuaHandlerListResources(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListResources returned error: %v", err)
 	}
-	if len(resources) != 1 {
-		t.Fatalf("expected one resource, got %d", len(resources))
+	if len(resources) != 2 {
+		t.Fatalf("expected two resources, got %d", len(resources))
 	}
-	if resources[0].URI != "kapua://devices" {
-		t.Fatalf("unexpected resource URI %s", resources[0].URI)
+	uris := map[string]bool{}
+	for _, res := range resources {
+		uris[res.URI] = true
+	}
+	if !uris["kapua://devices"] {
+		t.Fatalf("devices resource missing: %+v", resources)
+	}
+	if !uris["kapua://fleet-health"] {
+		t.Fatalf("fleet-health resource missing: %+v", resources)
 	}
 }
 
