@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -18,13 +19,15 @@ const (
 	defaultFleetHealthLimit    = 200
 	defaultStaleMinutes        = 60
 	defaultCriticalMinutes     = 60
+	defaultEventConcurrency    = 5
 	maxCriticalEventsPerDevice = 5
 )
 
 type fleetHealthConfig struct {
-	staleMinutes    int
-	criticalMinutes int
-	deviceLimit     int
+	staleMinutes     int
+	criticalMinutes  int
+	deviceLimit      int
+	eventConcurrency int
 }
 
 type fleetHealthReport struct {
@@ -78,8 +81,10 @@ func (h *KapuaHandler) readFleetHealthResource(ctx context.Context, uri *url.URL
 
 	online, offline, unknown := 0, 0, 0
 	var staleDevices []staleDevice
-	var criticalDevices []criticalDevice
-	var warnings []string
+	var eventTargets []struct {
+		device models.Device
+		status models.ConnectionStatus
+	}
 
 	for _, device := range devicesResult.Items {
 		status := connectionStatus(device)
@@ -107,33 +112,61 @@ func (h *KapuaHandler) readFleetHealthResource(ctx context.Context, uri *url.URL
 			continue
 		}
 
-		eventsResult, err := h.client.ListDeviceEvents(ctx, deviceID, map[string]string{
-			"startDate": criticalSince.Format(time.RFC3339),
-			"limit":     "20",
-			"sortParam": "receivedOn",
-			"sortDir":   "DESCENDING",
-		})
-		if err != nil {
-			warnings = append(warnings, fmt.Sprintf("device %s: %v", labelForDevice(device), err))
-			continue
-		}
-
-		criticalEvents := filterCriticalEvents(eventsResult.Items)
-		if len(criticalEvents) == 0 {
-			continue
-		}
-
-		if len(criticalEvents) > maxCriticalEventsPerDevice {
-			criticalEvents = criticalEvents[:maxCriticalEventsPerDevice]
-		}
-
-		criticalDevices = append(criticalDevices, criticalDevice{
-			ID:       deviceID,
-			ClientID: device.ClientID,
-			Status:   status,
-			Events:   criticalEvents,
-		})
+		eventTargets = append(eventTargets, struct {
+			device models.Device
+			status models.ConnectionStatus
+		}{device: device, status: status})
 	}
+
+	var criticalDevices []criticalDevice
+	var warnings []string
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	sem := make(chan struct{}, cfg.eventConcurrency)
+
+	for _, target := range eventTargets {
+		target := target
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			deviceID := string(target.device.ID)
+			eventsResult, err := h.client.ListDeviceEvents(ctx, deviceID, map[string]string{
+				"startDate": criticalSince.Format(time.RFC3339),
+				"limit":     "20",
+				"sortParam": "receivedOn",
+				"sortDir":   "DESCENDING",
+			})
+			if err != nil {
+				mu.Lock()
+				warnings = append(warnings, fmt.Sprintf("device %s: %v", labelForDevice(target.device), err))
+				mu.Unlock()
+				return
+			}
+
+			criticalEvents := filterCriticalEvents(eventsResult.Items)
+			if len(criticalEvents) == 0 {
+				return
+			}
+
+			if len(criticalEvents) > maxCriticalEventsPerDevice {
+				criticalEvents = criticalEvents[:maxCriticalEventsPerDevice]
+			}
+
+			mu.Lock()
+			criticalDevices = append(criticalDevices, criticalDevice{
+				ID:       deviceID,
+				ClientID: target.device.ClientID,
+				Status:   target.status,
+				Events:   criticalEvents,
+			})
+			mu.Unlock()
+		}()
+	}
+	wg.Wait()
 
 	report := fleetHealthReport{
 		GeneratedAt:               timeNow().UTC().Format(time.RFC3339),
@@ -166,9 +199,10 @@ func (h *KapuaHandler) readFleetHealthResource(ctx context.Context, uri *url.URL
 
 func parseFleetHealthConfig(uri *url.URL) fleetHealthConfig {
 	cfg := fleetHealthConfig{
-		staleMinutes:    defaultStaleMinutes,
-		criticalMinutes: defaultCriticalMinutes,
-		deviceLimit:     defaultFleetHealthLimit,
+		staleMinutes:     defaultStaleMinutes,
+		criticalMinutes:  defaultCriticalMinutes,
+		deviceLimit:      defaultFleetHealthLimit,
+		eventConcurrency: defaultEventConcurrency,
 	}
 	if uri == nil {
 		return cfg
@@ -178,6 +212,7 @@ func parseFleetHealthConfig(uri *url.URL) fleetHealthConfig {
 	cfg.staleMinutes = parsePositiveInt(query.Get("staleMinutes"), cfg.staleMinutes)
 	cfg.criticalMinutes = parsePositiveInt(query.Get("criticalMinutes"), cfg.criticalMinutes)
 	cfg.deviceLimit = parsePositiveInt(query.Get("limit"), cfg.deviceLimit)
+	cfg.eventConcurrency = parsePositiveInt(query.Get("eventConcurrency"), cfg.eventConcurrency)
 
 	return cfg
 }
