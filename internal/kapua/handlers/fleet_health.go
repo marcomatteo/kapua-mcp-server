@@ -20,6 +20,7 @@ const (
 	defaultStaleMinutes        = 60
 	defaultCriticalMinutes     = 60
 	defaultEventConcurrency    = 5
+	maxDevicePageSize          = 200
 	maxCriticalEventsPerDevice = 5
 )
 
@@ -33,6 +34,7 @@ type fleetHealthConfig struct {
 type fleetHealthReport struct {
 	GeneratedAt               string           `json:"generated_at"`
 	TotalDevices              int              `json:"total_devices"`
+	ProcessedDevices          int              `json:"processed_devices"`
 	Online                    int              `json:"online"`
 	Offline                   int              `json:"offline"`
 	Unknown                   int              `json:"unknown"`
@@ -62,18 +64,41 @@ func (h *KapuaHandler) readFleetHealthResource(ctx context.Context, uri *url.URL
 	cfg := parseFleetHealthConfig(uri)
 	h.logger.Info("Building fleet health report (stale>%d min, critical>%d min, limit=%d)", cfg.staleMinutes, cfg.criticalMinutes, cfg.deviceLimit)
 
-	deviceParams := map[string]string{
-		"limit":         strconv.Itoa(cfg.deviceLimit),
-		"askTotalCount": "true",
-	}
-	devicesResult, err := h.client.ListDevices(ctx, deviceParams)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build fleet health: %w", err)
+	var allDevices []models.Device
+	totalDevices := 0
+	offset := 0
+
+	for len(allDevices) < cfg.deviceLimit {
+		remaining := cfg.deviceLimit - len(allDevices)
+		pageSize := remaining
+		if pageSize > maxDevicePageSize {
+			pageSize = maxDevicePageSize
+		}
+
+		deviceParams := map[string]string{
+			"limit":         strconv.Itoa(pageSize),
+			"offset":        strconv.Itoa(offset),
+			"askTotalCount": "true",
+		}
+
+		devicesResult, err := h.client.ListDevices(ctx, deviceParams)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build fleet health: %w", err)
+		}
+
+		if totalDevices == 0 {
+			totalDevices = devicesResult.TotalCount
+		}
+		allDevices = append(allDevices, devicesResult.Items...)
+
+		if len(devicesResult.Items) == 0 || len(devicesResult.Items) < pageSize {
+			break
+		}
+		offset += len(devicesResult.Items)
 	}
 
-	totalDevices := devicesResult.TotalCount
 	if totalDevices == 0 {
-		totalDevices = len(devicesResult.Items)
+		totalDevices = len(allDevices)
 	}
 
 	cutoff := timeNow().Add(-time.Duration(cfg.staleMinutes) * time.Minute)
@@ -86,7 +111,7 @@ func (h *KapuaHandler) readFleetHealthResource(ctx context.Context, uri *url.URL
 		status models.ConnectionStatus
 	}
 
-	for _, device := range devicesResult.Items {
+	for _, device := range allDevices {
 		status := connectionStatus(device)
 		switch status {
 		case models.ConnectionStatusConnected:
@@ -171,6 +196,7 @@ func (h *KapuaHandler) readFleetHealthResource(ctx context.Context, uri *url.URL
 	report := fleetHealthReport{
 		GeneratedAt:               timeNow().UTC().Format(time.RFC3339),
 		TotalDevices:              totalDevices,
+		ProcessedDevices:          len(allDevices),
 		Online:                    online,
 		Offline:                   offline,
 		Unknown:                   unknown,
@@ -179,6 +205,10 @@ func (h *KapuaHandler) readFleetHealthResource(ctx context.Context, uri *url.URL
 		CriticalLookbackMinutes:   cfg.criticalMinutes,
 		DevicesWithCriticalEvents: criticalDevices,
 		Warnings:                  warnings,
+	}
+
+	if totalDevices > len(allDevices) {
+		report.Warnings = append(report.Warnings, fmt.Sprintf("processed %d of %d devices; increase limit to inspect full fleet", len(allDevices), totalDevices))
 	}
 
 	jsonData, err := json.MarshalIndent(report, "", "  ")
