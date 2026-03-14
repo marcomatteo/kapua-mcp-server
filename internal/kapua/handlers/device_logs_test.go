@@ -135,6 +135,36 @@ func TestHandleListDeviceLogsTruncated(t *testing.T) {
 	}
 }
 
+func TestHandleListDeviceLogsTruncatedNegativeOffset(t *testing.T) {
+	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		if got := r.URL.Query().Get("offset"); got != "" && got != "0" {
+			t.Errorf("negative offset must be clamped before reaching API, got offset=%s", got)
+		}
+		payload := models.DeviceLogListResult{
+			Items:         []models.DeviceLog{{StoreID: "log-1"}},
+			Size:          1,
+			LimitExceeded: true,
+		}
+		body, _ := json.Marshal(payload)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
+	})
+
+	params := &ListDeviceLogsParams{Limit: intPtr(1), Offset: intPtr(-7)}
+	result, _, err := handler.HandleListDeviceLogs(context.Background(), nil, params)
+	if err != nil {
+		t.Fatalf("HandleListDeviceLogs returned error: %v", err)
+	}
+
+	summary := textContent(t, result.Content[0])
+	if !strings.Contains(summary, "offset=1") {
+		t.Fatalf("expected clamped next offset offset=1 in summary, got: %s", summary)
+	}
+	if strings.Contains(summary, "offset=-") {
+		t.Fatalf("summary must not contain negative offset, got: %s", summary)
+	}
+}
+
 func TestHandleListDeviceLogsServiceError(t *testing.T) {
 	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

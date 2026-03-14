@@ -37,6 +37,11 @@ func (h *KapuaHandler) HandleListDataMessages(ctx context.Context, req *mcp.Call
 
 	h.logger.Info("Listing data messages")
 
+	if params.Offset != nil && *params.Offset < 0 {
+		zero := 0
+		params.Offset = &zero
+	}
+
 	query := &services.DataMessagesQuery{
 		ClientIDs:     params.ClientIDs,
 		Channel:       params.Channel,

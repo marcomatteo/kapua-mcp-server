@@ -77,7 +77,7 @@ func (h *KapuaHandler) HandleListDeviceEvents(ctx context.Context, req *mcp.Call
 		summary = fmt.Sprintf("Found %d device events (total count: %d).", len(result.Items), result.TotalCount)
 	}
 	if result.LimitExceeded {
-		nextOffset := params.Offset + len(result.Items)
+		nextOffset := max(params.Offset, 0) + len(result.Items)
 		summary += fmt.Sprintf(" Results are truncated. Use offset=%d to retrieve the next page.", nextOffset)
 	}
 

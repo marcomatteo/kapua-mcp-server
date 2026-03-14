@@ -37,6 +37,11 @@ func (h *KapuaHandler) HandleListDeviceLogs(ctx context.Context, req *mcp.CallTo
 
 	h.logger.Info("Listing device logs")
 
+	if params.Offset != nil && *params.Offset < 0 {
+		zero := 0
+		params.Offset = &zero
+	}
+
 	query := &services.DeviceLogsQuery{
 		ClientID:        params.ClientID,
 		Channel:         params.Channel,
