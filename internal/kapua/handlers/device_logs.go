@@ -75,6 +75,14 @@ func (h *KapuaHandler) HandleListDeviceLogs(ctx context.Context, req *mcp.CallTo
 	}
 
 	summary := fmt.Sprintf("Found %d device logs.", len(result.Items))
+	if result.LimitExceeded {
+		offset := 0
+		if params.Offset != nil {
+			offset = *params.Offset
+		}
+		nextOffset := offset + len(result.Items)
+		summary += fmt.Sprintf(" Results are truncated. Use offset=%d to retrieve the next page.", nextOffset)
+	}
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{Text: summary},
