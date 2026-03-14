@@ -61,7 +61,7 @@ docker run --rm \
   kapua-mcp-server
 ```
 
-The image is based on `distroless/base-debian12:nonroot` and supports multi-architecture builds (amd64/arm64).
+The image is based on `gcr.io/distroless/base-debian12:nonroot` and supports multi-architecture builds (amd64/arm64).
 
 ## Configuration
 
