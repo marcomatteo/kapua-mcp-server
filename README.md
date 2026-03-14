@@ -70,7 +70,6 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot` and supports mul
 | `KAPUA_API_ENDPOINT` | Yes | — | Kapua REST API base URL |
 | `KAPUA_USER` | Yes | — | Kapua username |
 | `KAPUA_PASSWORD` | Yes | — | Kapua password |
-| `KAPUA_TIMEOUT` | No | `30s` | HTTP client timeout |
 | `MCP_ALLOWED_ORIGINS` | No | common local hosts (`localhost`, `127.0.0.1`, `::1`, `0.0.0.0`, `host.docker.internal`) | Comma-separated allowed origins for HTTP mode (both HTTP/HTTPS variants, with and without the default port). Set `*` to disable checks. |
 | `LOG_LEVEL` | No | `INFO` | Log level: `DEBUG`, `INFO`, `WARN`, `ERROR` |
 
