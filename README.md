@@ -193,7 +193,7 @@ kapua-mcp-server/
 
 **Key design decisions:**
 - **Authentication:** JWT with automatic token refresh (5 min before expiry) and full re-auth fallback
-- **Pagination:** Generic paginator that follows Kapua's `limitExceeded` flag across all endpoints
+- **Pagination:** Per-endpoint pagination that honors Kapua's `limitExceeded` flag
 - **Transports:** Stdio (default, recommended for local use) or Streamable HTTP with CORS origin validation
 - **Concurrency:** Fleet health uses goroutine pools for parallel event fetching; thread-safe token management
 

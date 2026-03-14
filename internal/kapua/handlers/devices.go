@@ -13,6 +13,7 @@ import (
 )
 
 const deviceResourcePageSize = 200
+const deviceResourceDefaultLimit = 500
 
 // Device Management Tool Parameters
 
@@ -82,6 +83,13 @@ func (h *KapuaHandler) HandleListDevices(ctx context.Context, req *mcp.CallToolR
 	}
 
 	summary := fmt.Sprintf("Found %d devices.", len(result.Items))
+	if result.LimitExceeded {
+		nextOffset := max(params.Offset, 0) + len(result.Items)
+		summary += fmt.Sprintf(" Results are truncated. Use offset=%d to retrieve the next page.", nextOffset)
+	}
+	if result.TotalCount > 0 {
+		summary += fmt.Sprintf(" Total matching devices: %d.", result.TotalCount)
+	}
 
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
@@ -105,7 +113,10 @@ func (h *KapuaHandler) readDevicesResource(ctx context.Context, uri *url.URL) (*
 	var devices []models.Device
 	offset := 0
 	totalCount := 0
-	targetCount := limitParam // <=0 means fetch all
+	targetCount := limitParam
+	if targetCount <= 0 {
+		targetCount = deviceResourceDefaultLimit
+	}
 
 	for {
 

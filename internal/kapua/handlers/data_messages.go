@@ -37,6 +37,11 @@ func (h *KapuaHandler) HandleListDataMessages(ctx context.Context, req *mcp.Call
 
 	h.logger.Info("Listing data messages")
 
+	if params.Offset != nil && *params.Offset < 0 {
+		zero := 0
+		params.Offset = &zero
+	}
+
 	query := &services.DataMessagesQuery{
 		ClientIDs:     params.ClientIDs,
 		Channel:       params.Channel,
@@ -67,6 +72,14 @@ func (h *KapuaHandler) HandleListDataMessages(ctx context.Context, req *mcp.Call
 	}
 
 	summary := fmt.Sprintf("Found %d data messages.", len(result.Items))
+	if result.LimitExceeded {
+		offset := 0
+		if params.Offset != nil {
+			offset = *params.Offset
+		}
+		nextOffset := offset + len(result.Items)
+		summary += fmt.Sprintf(" Results are truncated. Use offset=%d to retrieve the next page.", nextOffset)
+	}
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{
 			&mcp.TextContent{Text: summary},

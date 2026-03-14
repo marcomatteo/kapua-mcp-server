@@ -94,6 +94,45 @@ func TestReadResourceDevicesSuccess(t *testing.T) {
 	}
 }
 
+func TestReadDevicesResourceDefaultCap(t *testing.T) {
+	requestCount := 0
+	handler := newHandlerWithServer(t, func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+		if limit <= 0 {
+			limit = 1
+		}
+		items := make([]models.Device, limit)
+		result := models.DeviceListResult{
+			Items:      items,
+			Size:       limit,
+			TotalCount: 10000,
+		}
+		body, _ := json.Marshal(result)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
+	})
+
+	res, err := handler.ReadResource(context.Background(), "kapua://devices")
+	if err != nil {
+		t.Fatalf("ReadResource returned error: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(res.Contents[0].Text), &payload); err != nil {
+		t.Fatalf("failed to unmarshal resource content: %v", err)
+	}
+
+	processed := int(payload["processed_count"].(float64))
+	if processed != deviceResourceDefaultLimit {
+		t.Fatalf("expected processed_count=%d (default cap), got %d", deviceResourceDefaultLimit, processed)
+	}
+	// 500 items at pageSize 200: pages of 200, 200, 100 → 3 requests
+	if requestCount != 3 {
+		t.Fatalf("expected 3 API requests for %d items (pageSize %d), got %d", deviceResourceDefaultLimit, deviceResourcePageSize, requestCount)
+	}
+}
+
 func TestReadResourceUnknown(t *testing.T) {
 	handler := &KapuaHandler{logger: utils.NewDefaultLogger("test")}
 
