@@ -118,6 +118,30 @@ func TestHandleListDataMessagesNoParams(t *testing.T) {
 	}
 }
 
+func TestHandleListDataMessagesTruncated(t *testing.T) {
+	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		payload := models.DataMessageListResult{
+			Items:         []models.DataMessage{{DatastoreID: "msg-1"}, {DatastoreID: "msg-2"}},
+			Size:          2,
+			LimitExceeded: true,
+		}
+		body, _ := json.Marshal(payload)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
+	})
+
+	params := &ListDataMessagesParams{Limit: intPtr(2), Offset: intPtr(30)}
+	result, _, err := handler.HandleListDataMessages(context.Background(), nil, params)
+	if err != nil {
+		t.Fatalf("HandleListDataMessages returned error: %v", err)
+	}
+
+	summary := textContent(t, result.Content[0])
+	if !strings.Contains(summary, "offset=32") {
+		t.Fatalf("expected next offset hint offset=32 in summary, got: %s", summary)
+	}
+}
+
 func TestHandleListDataMessagesServiceError(t *testing.T) {
 	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

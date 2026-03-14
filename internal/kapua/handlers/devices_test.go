@@ -78,6 +78,34 @@ func TestHandleListDevicesSuccess(t *testing.T) {
 	}
 }
 
+func TestHandleListDevicesTruncated(t *testing.T) {
+	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		payload := models.DeviceListResult{
+			Items:         []models.Device{{ClientID: "d1"}, {ClientID: "d2"}},
+			Size:          2,
+			LimitExceeded: true,
+			TotalCount:    42,
+		}
+		data, _ := json.Marshal(payload)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	})
+
+	params := &ListDevicesParams{Limit: 2, Offset: 10}
+	result, _, err := handler.HandleListDevices(context.Background(), nil, params)
+	if err != nil {
+		t.Fatalf("HandleListDevices returned error: %v", err)
+	}
+
+	summary := textContent(t, result.Content[0])
+	if !strings.Contains(summary, "offset=12") {
+		t.Fatalf("expected next offset hint offset=12 in summary, got: %s", summary)
+	}
+	if !strings.Contains(summary, "Total matching devices: 42") {
+		t.Fatalf("expected total count in summary, got: %s", summary)
+	}
+}
+
 func TestHandleListDevicesServiceError(t *testing.T) {
 	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)

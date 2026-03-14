@@ -111,6 +111,30 @@ func TestHandleListDeviceLogsNoParams(t *testing.T) {
 	}
 }
 
+func TestHandleListDeviceLogsTruncated(t *testing.T) {
+	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
+		payload := models.DeviceLogListResult{
+			Items:         []models.DeviceLog{{StoreID: "log-1"}, {StoreID: "log-2"}},
+			Size:          2,
+			LimitExceeded: true,
+		}
+		body, _ := json.Marshal(payload)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(body)
+	})
+
+	params := &ListDeviceLogsParams{Limit: intPtr(2), Offset: intPtr(40)}
+	result, _, err := handler.HandleListDeviceLogs(context.Background(), nil, params)
+	if err != nil {
+		t.Fatalf("HandleListDeviceLogs returned error: %v", err)
+	}
+
+	summary := textContent(t, result.Content[0])
+	if !strings.Contains(summary, "offset=42") {
+		t.Fatalf("expected next offset hint offset=42 in summary, got: %s", summary)
+	}
+}
+
 func TestHandleListDeviceLogsServiceError(t *testing.T) {
 	handler := newDeviceHandler(t, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
