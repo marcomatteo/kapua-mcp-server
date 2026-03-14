@@ -1,210 +1,225 @@
 # kapua-mcp-server
-kapua-mcp-server is an MCP server designed primarily for local troubleshooting and operator tooling when working with Eclipse Kapua or Eurotech Everyware Cloud IoT Device Management platforms. It exposes Kapua APIs through the Model Context Protocol so that assistants and diagnostics utilities can inspect devices, configurations, and telemetry without deploying additional infrastructure.
 
-This project is developed with support from OpenAI Codex.
+An MCP server that connects AI assistants to [Eclipse Kapua](https://eclipse.dev/kapua/) and [Eurotech Everyware Cloud](https://ec.eurotech.com) IoT platforms — enabling natural-language device management, telemetry exploration, and fleet diagnostics.
 
-## Project Structure
+[![Go 1.23+](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-compatible-blue)](https://modelcontextprotocol.io)
 
-```
-kapua-mcp-server/
-├── cmd/
-│   └── server/
-│       ├── logging_middleware.go   # HTTP request logging wrapper
-│       └── main.go                 # CLI entry point (stdio default, -http optional)
-├── internal/
-│   ├── kapua/
-│   │   ├── config/                 # Kapua-specific configuration loader
-│   │   ├── handlers/               # Tool implementations (devices, telemetry, etc.)
-│   │   ├── models/                 # Kapua API data models
-│   │   └── services/               # Kapua REST/Authentication clients
-│   └── mcp/
-│       ├── http_config.go          # HTTP transport configuration helpers
-│       ├── origin_guard.go         # Allowed-origin middleware
-│       └── server.go               # MCP server wiring and transport helpers
-├── pkg/
-│   └── utils/
-│       └── logger.go               # Structured logging helper
-├── specs/                          # REST API (OpenAPI)
-├── Dockerfile                      # Multi-arch container build
-├── .dockerignore                   # Docker build context filter
-├── bin/
-│   └── kapua-mcp-server            # Built binary output
-├── Makefile
-├── go.mod
-└── go.sum
-```
+## Why use this?
 
-## Requirements
-- Go 1.23+
+Instead of navigating dashboards, writing curl commands, or learning the Kapua REST API, you can manage your IoT fleet through conversation:
 
-## Configuration
-The server reads configuration from environment variables and a simple `.venv` file (if present). The `.venv` file uses `KEY=VALUE` lines.
+> **You:** "Show me all disconnected devices"
+> **Assistant:** _calls `kapua-devices-list` with status=DISCONNECTED_ — lists 3 offline gateways
+>
+> **You:** "What happened to gateway-07 in the last hour?"
+> **Assistant:** _calls `kapua-device-events-list`_ — shows a disconnect event 42 minutes ago
+>
+> **You:** "Show me its current configuration"
+> **Assistant:** _calls `kapua-device-configurations-read`_ — displays all component configs
+>
+> **You:** "Roll it back to the previous snapshot"
+> **Assistant:** _calls `kapua-device-snapshot-rollback`_ — triggers rollback successfully
 
-Required settings:
-- `KAPUA_API_ENDPOINT`: Kapua REST base URL (e.g., `https://kapua.example.com/api`)
-- `KAPUA_USER`: Kapua username
-- `KAPUA_PASSWORD`: Kapua password
-- `MCP_ALLOWED_ORIGINS` (optional): comma-separated list of additional origins allowed to call the HTTP Stream endpoint. Defaults include loopback hosts (`localhost`, `127.0.0.1`, `host.docker.internal`) for any port. Set to `*` to disable origin checks.
+This turns multi-step diagnostic workflows into a guided conversation without context-switching away from your IDE or terminal.
 
-Example `.venv`:
-```
+## Quick Start
+
+### 1. Configure credentials
+
+Create a `.venv` file in the project root:
+
+```bash
+cat <<'EOF' > .venv
 KAPUA_API_ENDPOINT=https://kapua.example.com/api
 KAPUA_USER=my-user
-KAPUA_PASSWORD=We!come12345
+KAPUA_PASSWORD=my-password
+EOF
 ```
 
-## Quick Start (Local Binary)
+### 2. Build and run
 
-1. Create a `.venv` file for credentials (keeps secrets out of your shell history):
-   ```bash
-   cat <<'EOF' > .venv
-   KAPUA_API_ENDPOINT=https://kapua.example.com/api
-   KAPUA_USER=my-user
-   KAPUA_PASSWORD=We!come12345
-   EOF
-   ```
-2. Build the binary (optional—`go run ./cmd/server` works too):
-   ```bash
-   make build
-   ```
-3. Launch the server over stdio (default; recommended for local tooling):
-   ```bash
-   ./bin/kapua-mcp-server
-   ```
+```bash
+make build
+./bin/kapua-mcp-server          # stdio transport (default)
+./bin/kapua-mcp-server -http    # HTTP transport on localhost:8000
+```
 
-   The process remains attached to your terminal, exchanging JSON-RPC messages over standard input/output with your MCP client.
+Or without building: `go run ./cmd/server`
 
-4. Switch to HTTP when you need a network-accessible endpoint:
-   ```bash
-   ./bin/kapua-mcp-server -http
-   ```
-
-   The HTTP transport listens on `host:port` (defaults to `localhost:8000`). You can override these with `-host` and `-port` at startup. Use `make run` to compile and start the binary in one step if you prefer.
-
-## Quick Start (Docker)
-
-Build a local image:
+### Docker
 
 ```bash
 docker build -t kapua-mcp-server .
-```
 
-Run the container exposing the HTTP stream transport (ideal for remote clients). Inject your Kapua credentials as environment variables:
-
-```bash
 docker run --rm \
   -e KAPUA_API_ENDPOINT=https://kapua.example.com/api \
   -e KAPUA_USER=my-user \
-  -e KAPUA_PASSWORD=We!come12345 \
+  -e KAPUA_PASSWORD=my-password \
   -p 8000:8000 \
   kapua-mcp-server
 ```
 
-The image is based on `gcr.io/distroless/base-debian12:nonroot`; no shell is available in the container. Inspect logs with `docker logs <container>`.
+The image is based on `gcr.io/distroless/base-debian12:nonroot` and supports multi-architecture builds (amd64/arm64).
 
-> **Multi-architecture:** The Dockerfile honours BuildKit's `TARGETOS`/`TARGETARCH`. Building on Apple Silicon (`arm64`) or passing `--platform` via `docker buildx build --platform linux/amd64 .` produces a matching binary.
+## Configuration
 
-> **Origin-handling:** Origin validation follows the MCP HTTP Stream specification. When running behind Docker, ensure the client connects using an allowed host (defaults cover loopback and `host.docker.internal`) or extend `MCP_ALLOWED_ORIGINS`.
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `KAPUA_API_ENDPOINT` | Yes | — | Kapua REST API base URL |
+| `KAPUA_USER` | Yes | — | Kapua username |
+| `KAPUA_PASSWORD` | Yes | — | Kapua password |
+| `KAPUA_TIMEOUT` | No | `30s` | HTTP client timeout |
+| `MCP_ALLOWED_ORIGINS` | No | common local hosts (`localhost`, `127.0.0.1`, `::1`, `0.0.0.0`, `host.docker.internal`) | Comma-separated allowed origins for HTTP mode (both HTTP/HTTPS variants, with and without the default port). Set `*` to disable checks. |
+| `LOG_LEVEL` | No | `INFO` | Log level: `DEBUG`, `INFO`, `WARN`, `ERROR` |
 
-## MCP Client Configuration Examples
+Settings can be provided as environment variables or in a `.venv` file (one `KEY=VALUE` per line). Environment variables take precedence.
 
-### Claude Desktop (macOS/Windows)
-> Claude desktop supports only STDIO MCP servers.
+## MCP Client Setup
 
-1. Locate the Claude Desktop configuration file:
-   - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
-   - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
-2. Add or update the `mcpServers` array with a stdio configuration:
+### Claude Desktop
+
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
 ```json
 {
   "mcpServers": {
     "kapua-mcp-server": {
-      "command": "/Users/marco/dev/git-marcomatteo/kapua-mcp-server/bin/kapua-mcp-server",
+      "command": "/path/to/kapua-mcp-server",
       "args": [],
       "env": {
-        "KAPUA_API_ENDPOINT": "https://api.kapua.io/",
-        "KAPUA_USER": "kapua-user",
-        "KAPUA_PASSWORD": "kapua-password"
+        "KAPUA_API_ENDPOINT": "https://kapua.example.com/api",
+        "KAPUA_USER": "my-user",
+        "KAPUA_PASSWORD": "my-password"
       }
     }
   }
 }
 ```
 
-3. Restart Claude Desktop. The Kapua tools appear under the **Servers** tab, and Claude will launch the MCP server with STDIO transport when you connect.
+### Claude Code
 
-   Replace the placeholder credential values with your Kapua settings before saving the configuration.
+Add to your project's `.mcp.json`:
 
-### Custom MCP Client
+```json
+{
+  "mcpServers": {
+    "kapua-mcp-server": {
+      "command": "/path/to/kapua-mcp-server",
+      "args": [],
+      "env": {
+        "KAPUA_API_ENDPOINT": "https://kapua.example.com/api",
+        "KAPUA_USER": "my-user",
+        "KAPUA_PASSWORD": "my-password"
+      }
+    }
+  }
+}
+```
 
-For HTTP-based setups, expose the container as shown in the Docker quick start and configure a MCP Client application to `http://host.docker.internal:8000` (macOS/Windows) or `http://127.0.0.1:8000` (Linux).
+### HTTP clients
 
+For HTTP-based setups, start the server with `-http` and point your MCP client to `http://localhost:8000` (or `http://host.docker.internal:8000` from Docker on macOS/Windows).
 
-## Testing and Coverage
+## Available Tools
 
-- Run the full unit test suite:
-  - `go test ./...`
-  - or `make test` (wrapper around the same command).
-- Generate a coverage profile while running tests:
-  - `go test ./... -coverprofile=coverage.out`
-- Inspect coverage results:
-  - Summary in the terminal: `go tool cover -func=coverage.out`
-  - Annotated HTML report: `go tool cover -html=coverage.out`
+### Devices
 
-The coverage report commands reuse the `coverage.out` file produced in the previous step; delete it when no longer needed.
+| Tool | Description |
+|---|---|
+| `kapua-devices-list` | List devices with filters: `clientId`, `status` (CONNECTED/DISCONNECTED/MISSING), `matchTerm`, pagination |
 
-## MCP Tools
+### Telemetry
 
-### Device Directory
-- `kapua-devices-list` — list devices in scope using filters such as `clientId`, `status`, `matchTerm`, `limit`, `offset` (`GET /{scopeId}/devices`).
+| Tool | Description |
+|---|---|
+| `kapua-data-messages-list` | Query telemetry data messages by channel, time range, client IDs |
 
-### Device Events
-- `kapua-device-events-list` — enumerate device log events with optional filters for time range, resource, pagination, and sort options (`GET /{scopeId}/devices/{deviceId}/events`).
+### Events & Logs
 
-### Data Clients
-- `kapua-data-messages-list` — list data messages with optional filters (multiple `clientId`, `channel`, pagination) (`GET /{scopeId}/data/messages`).
+| Tool | Description |
+|---|---|
+| `kapua-device-events-list` | List device lifecycle events with time range, resource, and sort filters |
+| `kapua-device-logs-list` | List device logs (Everyware Cloud only; not available on open-source Kapua) |
 
-### Device Logs
-- `kapua-device-logs-list` — list device logs with optional channel and property filters (`GET /{scopeId}/deviceLogs`).
-  - _Availability:_ This tool requires an Eurotech Everyware Cloud endpoint; open-source Kapua deployments do not expose `/deviceLogs` and the tool will return guidance instead of data.
+### Configuration & Snapshots
 
-### Device Configuration
-- `kapua-device-configurations-read` — retrieve all component configurations for a device (`GET /{scopeId}/devices/{deviceId}/configurations`).
-
-### Device Snapshots
-- `kapua-device-snapshots-list` — list snapshots available on a device (`GET /{scopeId}/devices/{deviceId}/snapshots`).
-- `kapua-device-snapshot-configurations-read` — retrieve component configurations stored within a snapshot (`GET /{scopeId}/devices/{deviceId}/snapshots/{snapshotId}`).
-- `kapua-device-snapshot-rollback` — request a rollback of the device to a snapshot (`POST /{scopeId}/devices/{deviceId}/snapshots/{snapshotId}/_rollback`).
+| Tool | Description |
+|---|---|
+| `kapua-device-configurations-read` | Read all component configurations for a device |
+| `kapua-device-snapshots-list` | List available configuration snapshots |
+| `kapua-device-snapshot-configurations-read` | Read the configuration stored in a specific snapshot |
+| `kapua-device-snapshot-rollback` | Rollback a device to a previous snapshot |
 
 ### Device Inventory
-- `kapua-device-inventory-read` — fetch general inventory details for a device (`GET /{scopeId}/devices/{deviceId}/inventory`).
-- `kapua-device-inventory-bundles-list` — list bundles in the device inventory (`GET /{scopeId}/devices/{deviceId}/inventory/bundles`).
-- `kapua-device-inventory-bundle-start` — trigger bundle inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/bundles/_start`).
-- `kapua-device-inventory-bundle-stop` — stop bundle inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/bundles/_stop`).
-- `kapua-device-inventory-containers-list` — list container inventory entries (`GET /{scopeId}/devices/{deviceId}/inventory/containers`).
-- `kapua-device-inventory-container-start` — trigger container inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/containers/_start`).
-- `kapua-device-inventory-container-stop` — stop container inventory collection (`POST /{scopeId}/devices/{deviceId}/inventory/containers/_stop`).
-- `kapua-device-inventory-system-packages-list` — list device system packages (`GET /{scopeId}/devices/{deviceId}/inventory/system`).
-- `kapua-device-inventory-deployment-packages-list` — list deployment packages (`GET /{scopeId}/devices/{deviceId}/inventory/packages`).
 
-## MCP Resources
-- `kapua://devices` — discoverable via MCP `resources/list` and readable through `resources/read`; returns JSON with up to 100 devices for the default scope `AQ` (`application/json`).
-- `kapua://fleet-health` — aggregated snapshot with online/offline counts, stale devices (based on last event/connection older than `staleMinutes`, default `60`), and devices with recent critical events (`criticalMinutes`, default `60`). Tunables: `limit` (device page size), `staleMinutes`, `criticalMinutes`.
+| Tool | Description |
+|---|---|
+| `kapua-device-inventory-read` | General inventory summary for a device |
+| `kapua-device-inventory-bundles-list` | List OSGi bundles |
+| `kapua-device-inventory-bundle-start` | Trigger bundle inventory collection |
+| `kapua-device-inventory-bundle-stop` | Stop bundle inventory collection |
+| `kapua-device-inventory-containers-list` | List containers (Docker, etc.) |
+| `kapua-device-inventory-container-start` | Trigger container inventory collection |
+| `kapua-device-inventory-container-stop` | Stop container inventory collection |
+| `kapua-device-inventory-system-packages-list` | List OS-level system packages |
+| `kapua-device-inventory-deployment-packages-list` | List application deployment packages |
 
-## Kapua Client Helpers
-- Kapua client helpers exposed by `KapuaClient` back the MCP tools listed above:
-  - `ListDeviceLogs` → `GET /{scopeId}/deviceLogs`
-  - `ListDataMessages` → `GET /{scopeId}/data/messages` (supports multiple `clientId` query parameters)
-  - `GetDataMessage` → `GET /{scopeId}/data/messages/{datastoreMessageId}`
-  - `ListDeviceSnapshots` / `ReadDeviceSnapshotConfigurations` / `RollbackDeviceSnapshot` → `GET /{scopeId}/devices/{deviceId}/snapshots`, `GET /{scopeId}/devices/{deviceId}/snapshots/{snapshotId}`, `POST /{scopeId}/devices/{deviceId}/snapshots/{snapshotId}/_rollback`
-- Each helper accepts common pagination parameters and surfaces Kapua errors for precise handling.
-- Extend these helpers with additional MCP endpoints whenever new Kapua features are needed.
+## Available Resources
 
-## Authentication and Token Refresh
-- On startup, the server authenticates with Kapua using username/password.
-- Automatic refresh before expiry; on `401 Unauthorized`, it forces a token refresh and retries once.
-- If the access token is expired and the refresh token is also expired/missing, the client performs a full re-authentication.
+| Resource URI | Description |
+|---|---|
+| `kapua://devices` | Live JSON list of devices in the current scope |
+| `kapua://fleet-health` | Aggregated fleet health: online/offline counts, stale devices, critical events. Tunable via `staleMinutes` and `criticalMinutes` (default: 60). |
 
-## API Spec
-- `specs/kapua_openapi.yaml` — community Kapua REST interface used by most tools.
-- `specs/ec_openapi.yaml` — Everyware Cloud-specific extensions (e.g., `/deviceLogs`). Device log support relies on this specification and is unavailable on vanilla Kapua.
+## Architecture
+
+```
+kapua-mcp-server/
+├── cmd/server/             # CLI entry point, HTTP logging middleware
+├── internal/
+│   ├── kapua/
+│   │   ├── config/         # Configuration loader (.venv + env vars)
+│   │   ├── handlers/       # MCP tool and resource implementations
+│   │   ├── models/         # Kapua API data models
+│   │   └── services/       # REST client, auth, pagination
+│   └── mcp/                # MCP server wiring, HTTP transport, origin guard
+├── pkg/utils/              # Structured logger
+├── specs/                  # OpenAPI specs (Kapua + Everyware Cloud)
+├── Dockerfile              # Multi-arch container build
+└── Makefile
+```
+
+**Key design decisions:**
+- **Authentication:** JWT with automatic token refresh (5 min before expiry) and full re-auth fallback
+- **Pagination:** Generic paginator that follows Kapua's `limitExceeded` flag across all endpoints
+- **Transports:** Stdio (default, recommended for local use) or Streamable HTTP with CORS origin validation
+- **Concurrency:** Fleet health uses goroutine pools for parallel event fetching; thread-safe token management
+
+## Development
+
+**Requirements:** Go 1.23+
+
+```bash
+make build          # Build binary to bin/
+make test           # Run tests with coverage
+make run            # Run the built binary
+make clean          # Remove build artifacts
+```
+
+Generate and view a coverage report:
+
+```bash
+go test ./... -coverprofile=coverage.out
+go tool cover -html=coverage.out
+```
+
+## API Specifications
+
+- `specs/kapua_openapi.yaml` — Eclipse Kapua REST API
+- `specs/ec_openapi.yaml` — Eurotech Everyware Cloud extensions (e.g., device logs)
+
+## License
+
+[MIT](LICENSE) — Marco Matteo Buzzulini
