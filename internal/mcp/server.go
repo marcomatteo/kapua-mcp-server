@@ -156,12 +156,12 @@ func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandl
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-bundle-start",
-		Description: "Request an OSGi bundle to be started on a Kapua device. Requires deviceId and a bundle descriptor object. This is an asynchronous remote operation.",
+		Description: "Request an OSGi bundle inventory start operation on a Kapua device. Requires deviceId and a bundle descriptor object. This is an asynchronous remote operation that triggers an inventory scan for the specified bundle.",
 	}, kapuaHandler.HandleDeviceInventoryBundleStart)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-bundle-stop",
-		Description: "Request an OSGi bundle to be stopped on a Kapua device. Requires deviceId and a bundle descriptor object. This is an asynchronous remote operation.",
+		Description: "Request an OSGi bundle inventory stop operation on a Kapua device. Requires deviceId and a bundle descriptor object. This is an asynchronous remote operation that stops an inventory scan for the specified bundle.",
 	}, kapuaHandler.HandleDeviceInventoryBundleStop)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
@@ -171,12 +171,12 @@ func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandl
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-container-start",
-		Description: "Request a container to be started on a Kapua device. Requires deviceId and a container descriptor object. This is an asynchronous remote operation.",
+		Description: "Request a container inventory start operation on a Kapua device. Requires deviceId and a container descriptor object. This is an asynchronous remote operation that triggers an inventory scan for the specified container.",
 	}, kapuaHandler.HandleDeviceInventoryContainerStart)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-container-stop",
-		Description: "Request a container to be stopped on a Kapua device. Requires deviceId and a container descriptor object. This is an asynchronous remote operation.",
+		Description: "Request a container inventory stop operation on a Kapua device. Requires deviceId and a container descriptor object. This is an asynchronous remote operation that stops an inventory scan for the specified container.",
 	}, kapuaHandler.HandleDeviceInventoryContainerStop)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
