@@ -68,7 +68,17 @@ func (s *Server) Handler(httpCfg *HTTPConfig) http.Handler {
 		logger = utils.NewDefaultLogger("MCPServer")
 	}
 
-	return newOriginMiddleware(httpCfg, logger, streamHandler)
+	mcpHandler := newOriginMiddleware(httpCfg, logger, streamHandler)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+	mux.Handle("/", mcpHandler)
+
+	return mux
 }
 
 func (s *Server) ListenAndServe(addr string, handler http.Handler) error {

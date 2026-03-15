@@ -139,6 +139,33 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 	}
 }
 
+func TestHealthEndpoint(t *testing.T) {
+	srv := &Server{
+		logger: utils.NewDefaultLogger("test"),
+		kapuaCfg: &config.Config{
+			Kapua: config.KapuaConfig{APIEndpoint: "https://example"},
+		},
+		mcpServer: mcpsdk.NewServer(&mcpsdk.Implementation{Name: "test", Version: "dev"}, nil),
+	}
+
+	handler := srv.Handler(&HTTPConfig{})
+
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("expected application/json, got %s", ct)
+	}
+	body := rec.Body.String()
+	if body != `{"status":"ok"}` {
+		t.Fatalf("unexpected body: %s", body)
+	}
+}
+
 func TestRunTransportNilTransport(t *testing.T) {
 	srv := &Server{
 		logger: utils.NewDefaultLogger("test"),
