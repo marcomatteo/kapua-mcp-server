@@ -9,12 +9,12 @@ import (
 )
 
 type DeviceSnapshotsParams struct {
-	DeviceID string `json:"deviceId" jsonschema:"The device ID"`
+	DeviceID string `json:"deviceId" jsonschema:"The Kapua device ID (required)"`
 }
 
 type DeviceSnapshotLookupParams struct {
-	DeviceID   string `json:"deviceId" jsonschema:"The device ID"`
-	SnapshotID string `json:"snapshotId" jsonschema:"The snapshot ID"`
+	DeviceID   string `json:"deviceId" jsonschema:"The Kapua device ID (required)"`
+	SnapshotID string `json:"snapshotId" jsonschema:"The snapshot ID to read or rollback to (required). Use kapua-device-snapshots-list to discover available IDs"`
 }
 
 // HandleDeviceSnapshotsList lists available snapshots for a device and returns both

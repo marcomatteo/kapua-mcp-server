@@ -17,8 +17,8 @@ type ListDataMessagesParams struct {
 	ClientIDs     []string `json:"clientIds,omitempty" jsonschema:"Filter data messages by one or more clientIds"`
 	Channel       string   `json:"channel,omitempty" jsonschema:"Filter data messages by channel"`
 	StrictChannel *bool    `json:"strictChannel,omitempty" jsonschema:"Restrict search to the provided channel only"`
-	StartDate     string   `json:"startDate,omitempty" jsonschema:"Filter messages captured on or after this timestamp"`
-	EndDate       string   `json:"endDate,omitempty" jsonschema:"Filter messages captured on or before this timestamp"`
+	StartDate     string   `json:"startDate,omitempty" jsonschema:"Filter messages captured on or after this RFC3339 timestamp"`
+	EndDate       string   `json:"endDate,omitempty" jsonschema:"Filter messages captured on or before this RFC3339 timestamp"`
 	SortDir       string   `json:"sortDir,omitempty" jsonschema:"Sort direction ASC or DESC"`
 	Limit         *int     `json:"limit,omitempty" jsonschema:"Maximum number of messages to return"`
 	Offset        *int     `json:"offset,omitempty" jsonschema:"Number of messages to skip before returning results"`

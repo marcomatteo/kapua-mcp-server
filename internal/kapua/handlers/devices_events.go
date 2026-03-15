@@ -12,7 +12,7 @@ import (
 // ListDeviceEventsParams defines parameters for listing device events (logs)
 // for a Kapua device.
 type ListDeviceEventsParams struct {
-	DeviceID      string `json:"deviceId" jsonschema:"The Kapua device ID to read events for"`
+	DeviceID      string `json:"deviceId" jsonschema:"The Kapua device ID to read events for (required)"`
 	Resource      string `json:"resource,omitempty" jsonschema:"Filter events by resource (e.g. LOG)"`
 	StartDate     string `json:"startDate,omitempty" jsonschema:"Filter events created on or after this RFC3339 timestamp"`
 	EndDate       string `json:"endDate,omitempty" jsonschema:"Filter events created on or before this RFC3339 timestamp"`
