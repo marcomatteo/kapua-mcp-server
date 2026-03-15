@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -17,14 +18,17 @@ type KapuaConfig struct {
 	APIEndpoint string `json:"api_endpoint"`
 	Username    string `json:"username"`
 	Password    string `json:"password"`
-	Timeout     int    `json:"timeout"` // in seconds
+	APIKey      string `json:"api_key"`    // API key for KAPUA_AUTH_METHOD=apikey
+	AuthMethod  string `json:"auth_method"` // "password" (default) or "apikey"
+	Timeout     int    `json:"timeout"`    // in seconds
 }
 
 // Load loads configuration from environment variables and .venv file
 func Load() (*Config, error) {
 	config := &Config{
 		Kapua: KapuaConfig{
-			Timeout: 30, // default timeout
+			Timeout:    30, // default timeout
+			AuthMethod: "password",
 		},
 	}
 
@@ -38,11 +42,20 @@ func Load() (*Config, error) {
 	if config.Kapua.APIEndpoint == "" {
 		return nil, fmt.Errorf("KAPUA_API_ENDPOINT is required")
 	}
-	if config.Kapua.Username == "" {
-		return nil, fmt.Errorf("KAPUA_USER is required")
-	}
-	if config.Kapua.Password == "" {
-		return nil, fmt.Errorf("KAPUA_PASSWORD is required")
+
+	switch config.Kapua.AuthMethod {
+	case "apikey":
+		if config.Kapua.APIKey == "" {
+			return nil, fmt.Errorf("KAPUA_API_KEY is required when KAPUA_AUTH_METHOD=apikey")
+		}
+	default:
+		config.Kapua.AuthMethod = "password"
+		if config.Kapua.Username == "" {
+			return nil, fmt.Errorf("KAPUA_USER is required")
+		}
+		if config.Kapua.Password == "" {
+			return nil, fmt.Errorf("KAPUA_PASSWORD is required")
+		}
 	}
 
 	return config, nil
@@ -82,6 +95,14 @@ func loadFromEnvFile(config *Config, filename string) error {
 			config.Kapua.Username = value
 		case "KAPUA_PASSWORD":
 			config.Kapua.Password = value
+		case "KAPUA_API_KEY":
+			config.Kapua.APIKey = value
+		case "KAPUA_AUTH_METHOD":
+			config.Kapua.AuthMethod = value
+		case "KAPUA_TIMEOUT":
+			if v, err := strconv.Atoi(value); err == nil {
+				config.Kapua.Timeout = v
+			}
 		}
 	}
 
@@ -98,5 +119,16 @@ func loadFromEnv(config *Config) {
 	}
 	if password := os.Getenv("KAPUA_PASSWORD"); password != "" {
 		config.Kapua.Password = password
+	}
+	if apiKey := os.Getenv("KAPUA_API_KEY"); apiKey != "" {
+		config.Kapua.APIKey = apiKey
+	}
+	if authMethod := os.Getenv("KAPUA_AUTH_METHOD"); authMethod != "" {
+		config.Kapua.AuthMethod = authMethod
+	}
+	if timeout := os.Getenv("KAPUA_TIMEOUT"); timeout != "" {
+		if v, err := strconv.Atoi(timeout); err == nil {
+			config.Kapua.Timeout = v
+		}
 	}
 }

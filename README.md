@@ -28,13 +28,23 @@ This turns multi-step diagnostic workflows into a guided conversation without co
 
 ### 1. Configure credentials
 
-Create a `.venv` file in the project root:
+Create a `.venv` file in the project root. Choose one of the two authentication methods:
 
+**Username/password (default):**
 ```bash
 cat <<'EOF' > .venv
 KAPUA_API_ENDPOINT=https://kapua.example.com/api
 KAPUA_USER=my-user
 KAPUA_PASSWORD=my-password
+EOF
+```
+
+**API key (recommended for production):**
+```bash
+cat <<'EOF' > .venv
+KAPUA_API_ENDPOINT=https://kapua.example.com/api
+KAPUA_AUTH_METHOD=apikey
+KAPUA_API_KEY=my-api-key
 EOF
 ```
 
@@ -55,8 +65,8 @@ docker build -t kapua-mcp-server .
 
 docker run --rm \
   -e KAPUA_API_ENDPOINT=https://kapua.example.com/api \
-  -e KAPUA_USER=my-user \
-  -e KAPUA_PASSWORD=my-password \
+  -e KAPUA_AUTH_METHOD=apikey \
+  -e KAPUA_API_KEY=my-api-key \
   -p 8000:8000 \
   kapua-mcp-server
 ```
@@ -68,9 +78,11 @@ The image is based on `gcr.io/distroless/base-debian12:nonroot` and supports mul
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `KAPUA_API_ENDPOINT` | Yes | — | Kapua REST API base URL |
-| `KAPUA_USER` | Yes | — | Kapua username |
-| `KAPUA_PASSWORD` | Yes | — | Kapua password |
-| `KAPUA_TIMEOUT` | No | `30s` | HTTP client timeout |
+| `KAPUA_AUTH_METHOD` | No | `password` | Authentication method: `password` or `apikey` |
+| `KAPUA_USER` | Yes (password) | — | Kapua username (required when `KAPUA_AUTH_METHOD=password`) |
+| `KAPUA_PASSWORD` | Yes (password) | — | Kapua password (required when `KAPUA_AUTH_METHOD=password`) |
+| `KAPUA_API_KEY` | Yes (apikey) | — | Kapua API key (required when `KAPUA_AUTH_METHOD=apikey`) |
+| `KAPUA_TIMEOUT` | No | `30` | HTTP client timeout in seconds |
 | `MCP_ALLOWED_ORIGINS` | No | common local hosts (`localhost`, `127.0.0.1`, `::1`, `0.0.0.0`, `host.docker.internal`) | Comma-separated allowed origins for HTTP mode (both HTTP/HTTPS variants, with and without the default port). Set `*` to disable checks. |
 | `LOG_LEVEL` | No | `INFO` | Log level: `DEBUG`, `INFO`, `WARN`, `ERROR` |
 
