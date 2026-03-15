@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -74,7 +75,9 @@ func TestEnvOverridesFile(t *testing.T) {
 	t.Setenv("KAPUA_USER", "envuser")
 	t.Setenv("KAPUA_PASSWORD", "envpass")
 
-	loadFromEnv(cfg)
+	if err := loadFromEnv(cfg); err != nil {
+		t.Fatalf("loadFromEnv returned error: %v", err)
+	}
 
 	if cfg.Kapua.APIEndpoint != "http://env/api" {
 		t.Errorf("APIEndpoint not overridden, got %q", cfg.Kapua.APIEndpoint)
@@ -102,6 +105,28 @@ func TestLoadTimeout(t *testing.T) {
 	}
 }
 
+func TestLoadTimeoutInvalidEnv(t *testing.T) {
+	t.Setenv("KAPUA_API_ENDPOINT", "http://example.com/api")
+	t.Setenv("KAPUA_USER", "user")
+	t.Setenv("KAPUA_PASSWORD", "pass")
+	t.Setenv("KAPUA_TIMEOUT", "30s")
+
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "invalid KAPUA_TIMEOUT") {
+		t.Fatalf("expected invalid KAPUA_TIMEOUT error, got %v", err)
+	}
+}
+
+func TestLoadTimeoutZeroEnv(t *testing.T) {
+	t.Setenv("KAPUA_API_ENDPOINT", "http://example.com/api")
+	t.Setenv("KAPUA_USER", "user")
+	t.Setenv("KAPUA_PASSWORD", "pass")
+	t.Setenv("KAPUA_TIMEOUT", "0")
+
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "invalid KAPUA_TIMEOUT") {
+		t.Fatalf("expected invalid KAPUA_TIMEOUT error, got %v", err)
+	}
+}
+
 func TestLoadTimeoutFromFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	envFile := filepath.Join(tmpDir, ".venv")
@@ -116,6 +141,34 @@ func TestLoadTimeoutFromFile(t *testing.T) {
 	}
 	if cfg.Kapua.Timeout != 45 {
 		t.Errorf("expected Timeout 45, got %d", cfg.Kapua.Timeout)
+	}
+}
+
+func TestLoadTimeoutInvalidInFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, ".venv")
+	content := "KAPUA_TIMEOUT=30s\n"
+	if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write env file: %v", err)
+	}
+
+	cfg := &Config{Kapua: KapuaConfig{Timeout: 30}}
+	if err := loadFromEnvFile(cfg, envFile); err == nil || !strings.Contains(err.Error(), "invalid KAPUA_TIMEOUT") {
+		t.Fatalf("expected invalid KAPUA_TIMEOUT error, got %v", err)
+	}
+}
+
+func TestLoadTimeoutZeroInFile(t *testing.T) {
+	tmpDir := t.TempDir()
+	envFile := filepath.Join(tmpDir, ".venv")
+	content := "KAPUA_TIMEOUT=0\n"
+	if err := os.WriteFile(envFile, []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write env file: %v", err)
+	}
+
+	cfg := &Config{Kapua: KapuaConfig{Timeout: 30}}
+	if err := loadFromEnvFile(cfg, envFile); err == nil || !strings.Contains(err.Error(), "invalid KAPUA_TIMEOUT") {
+		t.Fatalf("expected invalid KAPUA_TIMEOUT error, got %v", err)
 	}
 }
 
@@ -147,6 +200,17 @@ func TestLoadAPIKeyMissingKey(t *testing.T) {
 
 	if _, err := Load(); err == nil {
 		t.Fatal("expected error when KAPUA_AUTH_METHOD=apikey but no KAPUA_API_KEY")
+	}
+}
+
+func TestLoadUnsupportedAuthMethod(t *testing.T) {
+	t.Setenv("KAPUA_API_ENDPOINT", "http://example.com/api")
+	t.Setenv("KAPUA_AUTH_METHOD", "oauth")
+	t.Setenv("KAPUA_USER", "user")
+	t.Setenv("KAPUA_PASSWORD", "pass")
+
+	if _, err := Load(); err == nil || !strings.Contains(err.Error(), "unsupported KAPUA_AUTH_METHOD") {
+		t.Fatalf("expected unsupported auth method error, got %v", err)
 	}
 }
 

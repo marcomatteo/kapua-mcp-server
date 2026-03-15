@@ -18,9 +18,9 @@ type KapuaConfig struct {
 	APIEndpoint string `json:"api_endpoint"`
 	Username    string `json:"username"`
 	Password    string `json:"password"`
-	APIKey      string `json:"api_key"`    // API key for KAPUA_AUTH_METHOD=apikey
+	APIKey      string `json:"api_key"`     // API key for KAPUA_AUTH_METHOD=apikey
 	AuthMethod  string `json:"auth_method"` // "password" (default) or "apikey"
-	Timeout     int    `json:"timeout"`    // in seconds
+	Timeout     int    `json:"timeout"`     // in seconds
 }
 
 // Load loads configuration from environment variables and .venv file
@@ -32,11 +32,14 @@ func Load() (*Config, error) {
 		},
 	}
 
-	// Load from .venv file first
-	if err := loadFromEnvFile(config, ".venv"); err != nil {
-		// .venv file not found or not readable, continue with env variables
+	// Load from .venv file first; file-not-found is silently ignored
+	if err := loadFromEnvFile(config, ".venv"); err != nil && !os.IsNotExist(err) {
+		return nil, err
 	}
-	loadFromEnv(config)
+
+	if err := loadFromEnv(config); err != nil {
+		return nil, err
+	}
 
 	// Validate required fields
 	if config.Kapua.APIEndpoint == "" {
@@ -48,7 +51,7 @@ func Load() (*Config, error) {
 		if config.Kapua.APIKey == "" {
 			return nil, fmt.Errorf("KAPUA_API_KEY is required when KAPUA_AUTH_METHOD=apikey")
 		}
-	default:
+	case "password", "":
 		config.Kapua.AuthMethod = "password"
 		if config.Kapua.Username == "" {
 			return nil, fmt.Errorf("KAPUA_USER is required")
@@ -56,9 +59,23 @@ func Load() (*Config, error) {
 		if config.Kapua.Password == "" {
 			return nil, fmt.Errorf("KAPUA_PASSWORD is required")
 		}
+	default:
+		return nil, fmt.Errorf("unsupported KAPUA_AUTH_METHOD %q: must be \"password\" or \"apikey\"", config.Kapua.AuthMethod)
 	}
 
 	return config, nil
+}
+
+// parseTimeout parses and validates a timeout string value; it must be a positive integer.
+func parseTimeout(value string) (int, error) {
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid KAPUA_TIMEOUT %q: must be a positive integer number of seconds", value)
+	}
+	if v <= 0 {
+		return 0, fmt.Errorf("invalid KAPUA_TIMEOUT %d: must be greater than zero", v)
+	}
+	return v, nil
 }
 
 // loadFromEnvFile loads configuration from a .env style file
@@ -100,9 +117,11 @@ func loadFromEnvFile(config *Config, filename string) error {
 		case "KAPUA_AUTH_METHOD":
 			config.Kapua.AuthMethod = value
 		case "KAPUA_TIMEOUT":
-			if v, err := strconv.Atoi(value); err == nil {
-				config.Kapua.Timeout = v
+			v, err := parseTimeout(value)
+			if err != nil {
+				return err
 			}
+			config.Kapua.Timeout = v
 		}
 	}
 
@@ -110,7 +129,7 @@ func loadFromEnvFile(config *Config, filename string) error {
 }
 
 // loadFromEnv loads configuration from environment variables
-func loadFromEnv(config *Config) {
+func loadFromEnv(config *Config) error {
 	if endpoint := os.Getenv("KAPUA_API_ENDPOINT"); endpoint != "" {
 		config.Kapua.APIEndpoint = endpoint
 	}
@@ -127,8 +146,11 @@ func loadFromEnv(config *Config) {
 		config.Kapua.AuthMethod = authMethod
 	}
 	if timeout := os.Getenv("KAPUA_TIMEOUT"); timeout != "" {
-		if v, err := strconv.Atoi(timeout); err == nil {
-			config.Kapua.Timeout = v
+		v, err := parseTimeout(timeout)
+		if err != nil {
+			return err
 		}
+		config.Kapua.Timeout = v
 	}
+	return nil
 }
