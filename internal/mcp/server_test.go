@@ -150,19 +150,40 @@ func TestHealthEndpoint(t *testing.T) {
 
 	handler := srv.Handler(&HTTPConfig{})
 
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, req)
+	t.Run("GET returns 200 with status ok", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rec.Code)
-	}
-	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
-		t.Fatalf("expected application/json, got %s", ct)
-	}
-	body := rec.Body.String()
-	if body != `{"status":"ok"}` {
-		t.Fatalf("unexpected body: %s", body)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rec.Code)
+		}
+		if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+			t.Fatalf("expected application/json, got %s", ct)
+		}
+		body := rec.Body.String()
+		if body != `{"status":"ok"}` {
+			t.Fatalf("unexpected body: %s", body)
+		}
+	})
+
+	for _, method := range []string{
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodHead,
+		http.MethodOptions,
+	} {
+		t.Run(method+" returns 405 Method Not Allowed", func(t *testing.T) {
+			req := httptest.NewRequest(method, "/health", nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusMethodNotAllowed {
+				t.Fatalf("expected 405, got %d", rec.Code)
+			}
+		})
 	}
 }
 
