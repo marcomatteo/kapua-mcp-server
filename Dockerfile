@@ -36,5 +36,7 @@ COPY --from=builder /out/kapua-mcp-server /app/kapua-mcp-server
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 EXPOSE 8000
+# Health check endpoint: GET /health returns {"status":"ok"}
+# Configure probes in your orchestrator (e.g. Kubernetes httpGet on /health).
 ENTRYPOINT ["/app/kapua-mcp-server"]
-CMD ["-http", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["-http", "-host", "0.0.0.0", "-port", "8000"]

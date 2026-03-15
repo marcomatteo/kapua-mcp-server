@@ -139,6 +139,54 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 	}
 }
 
+func TestHealthEndpoint(t *testing.T) {
+	srv := &Server{
+		logger: utils.NewDefaultLogger("test"),
+		kapuaCfg: &config.Config{
+			Kapua: config.KapuaConfig{APIEndpoint: "https://example"},
+		},
+		mcpServer: mcpsdk.NewServer(&mcpsdk.Implementation{Name: "test", Version: "dev"}, nil),
+	}
+
+	handler := srv.Handler(&HTTPConfig{})
+
+	t.Run("GET returns 200 with status ok", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/health", nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+
+		if rec.Code != http.StatusOK {
+			t.Fatalf("expected 200, got %d", rec.Code)
+		}
+		if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+			t.Fatalf("expected application/json, got %s", ct)
+		}
+		body := rec.Body.String()
+		if body != `{"status":"ok"}` {
+			t.Fatalf("unexpected body: %s", body)
+		}
+	})
+
+	for _, method := range []string{
+		http.MethodPost,
+		http.MethodPut,
+		http.MethodPatch,
+		http.MethodDelete,
+		http.MethodHead,
+		http.MethodOptions,
+	} {
+		t.Run(method+" returns 405 Method Not Allowed", func(t *testing.T) {
+			req := httptest.NewRequest(method, "/health", nil)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusMethodNotAllowed {
+				t.Fatalf("expected 405, got %d", rec.Code)
+			}
+		})
+	}
+}
+
 func TestRunTransportNilTransport(t *testing.T) {
 	srv := &Server{
 		logger: utils.NewDefaultLogger("test"),
