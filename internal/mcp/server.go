@@ -131,7 +131,7 @@ func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandl
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-snapshots-list",
-		Description: "List available configuration snapshots for a Kapua device. Requires deviceId. Returns snapshot IDs that can be used with snapshot-configurations-read or snapshot-rollback.",
+		Description: "List available configuration snapshots for a Kapua device. Requires deviceId. Returns snapshot IDs that can be used with kapua-device-snapshot-configurations-read or kapua-device-snapshot-rollback.",
 	}, kapuaHandler.HandleDeviceSnapshotsList)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{

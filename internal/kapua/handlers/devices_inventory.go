@@ -44,7 +44,7 @@ func (h *KapuaHandler) HandleDeviceInventoryBundles(ctx context.Context, req *mc
 
 type DeviceInventoryBundleActionParams struct {
 	DeviceID string                       `json:"deviceId" jsonschema:"The Kapua device ID (required)"`
-	Bundle   models.DeviceInventoryBundle `json:"bundle" jsonschema:"Bundle descriptor object with id, name, version, status, and signed fields. Use kapua-device-inventory-bundles-list to discover bundles"`
+	Bundle   models.DeviceInventoryBundle `json:"bundle" jsonschema:"Bundle descriptor object with id/name/version/status/signed fields. Use kapua-device-inventory-bundles-list to discover bundles"`
 }
 
 func (h *KapuaHandler) HandleDeviceInventoryBundleStart(ctx context.Context, req *mcp.CallToolRequest, params *DeviceInventoryBundleActionParams) (*mcp.CallToolResult, any, error) {
@@ -85,7 +85,7 @@ func (h *KapuaHandler) HandleDeviceInventoryContainers(ctx context.Context, req 
 
 type DeviceInventoryContainerActionParams struct {
 	DeviceID  string                          `json:"deviceId" jsonschema:"The Kapua device ID (required)"`
-	Container models.DeviceInventoryContainer `json:"container" jsonschema:"Container descriptor object with name, version, containerType, and state fields. Use kapua-device-inventory-containers-list to discover containers"`
+	Container models.DeviceInventoryContainer `json:"container" jsonschema:"Container descriptor object with name/version/containerType/state fields. Use kapua-device-inventory-containers-list to discover containers"`
 }
 
 func (h *KapuaHandler) HandleDeviceInventoryContainerStart(ctx context.Context, req *mcp.CallToolRequest, params *DeviceInventoryContainerActionParams) (*mcp.CallToolResult, any, error) {
