@@ -23,7 +23,7 @@ type KapuaConfig struct {
 	Timeout     int    `json:"timeout"`     // in seconds
 }
 
-// Load loads configuration from environment variables and .venv file
+// Load loads configuration from environment variables and .env file
 func Load() (*Config, error) {
 	config := &Config{
 		Kapua: KapuaConfig{
@@ -32,8 +32,8 @@ func Load() (*Config, error) {
 		},
 	}
 
-	// Load from .venv file first; file-not-found is silently ignored
-	if err := loadFromEnvFile(config, ".venv"); err != nil && !os.IsNotExist(err) {
+	// Load from .env file first; file-not-found is silently ignored
+	if err := loadFromEnvFile(config, ".env"); err != nil && !os.IsNotExist(err) {
 		return nil, err
 	}
 

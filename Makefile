@@ -20,8 +20,8 @@ clean:
 test:
 	go test ./... -coverprofile=coverage.out
 
-# lint:
-# 	golangci-lint run
+lint:
+	golangci-lint run ./...
 
 # Help information
 .PHONY: help
@@ -31,4 +31,5 @@ help:
 	@echo "  make build         - Build for current platform"
 	@echo "  make clean         - Clean build outputs"
 	@echo "  make run		    - Run the application"
+	@echo "  make lint          - Run linter"
 	@echo "  make help          - Show this help information"

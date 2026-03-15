@@ -35,9 +35,9 @@ func TestNewServerSuccess(t *testing.T) {
 			Transport: handlerRoundTripper{handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch {
 				case r.URL.Path == "/v1/authentication/user":
-					io.WriteString(w, `{"tokenId":"token","refreshToken":"refresh","expiresOn":"2025-01-02T15:04:05Z","refreshExpiresOn":"2025-01-03T15:04:05Z","scopeId":"tenant"}`)
+					_, _ = io.WriteString(w, `{"tokenId":"token","refreshToken":"refresh","expiresOn":"2025-01-02T15:04:05Z","refreshExpiresOn":"2025-01-03T15:04:05Z","scopeId":"tenant"}`)
 				case strings.HasSuffix(r.URL.Path, "/devices"):
-					io.WriteString(w, `{"items":[]}`)
+					_, _ = io.WriteString(w, `{"items":[]}`)
 				default:
 					t.Fatalf("unexpected path %s", r.URL.Path)
 				}
@@ -64,7 +64,7 @@ func TestNewServerAuthFailure(t *testing.T) {
 		client.SetHTTPClient(&http.Client{
 			Transport: handlerRoundTripper{handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusUnauthorized)
-				io.WriteString(w, `{"code":"ERR"}`)
+				_, _ = io.WriteString(w, `{"code":"ERR"}`)
 			})},
 		})
 		return client
