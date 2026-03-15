@@ -47,7 +47,7 @@ func TestNewServerSuccess(t *testing.T) {
 	}
 	defer func() { kapuaClientFactory = services.NewKapuaClient }()
 
-	cfg := &config.Config{Kapua: config.KapuaConfig{APIEndpoint: "http://kapua.test", Timeout: 5}}
+	cfg := &config.Config{Kapua: config.KapuaConfig{APIEndpoint: "http://kapua.test", Timeout: 5, Username: "user", Password: "pass", AuthMethod: "password"}}
 
 	srv, err := NewServer(context.Background(), cfg)
 	if err != nil {
@@ -71,7 +71,7 @@ func TestNewServerAuthFailure(t *testing.T) {
 	}
 	defer func() { kapuaClientFactory = services.NewKapuaClient }()
 
-	cfg := &config.Config{Kapua: config.KapuaConfig{APIEndpoint: "http://kapua.test", Timeout: 5}}
+	cfg := &config.Config{Kapua: config.KapuaConfig{APIEndpoint: "http://kapua.test", Timeout: 5, Username: "user", Password: "pass", AuthMethod: "password"}}
 
 	_, err := NewServer(context.Background(), cfg)
 	if err == nil {

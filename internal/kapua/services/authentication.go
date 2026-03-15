@@ -202,12 +202,28 @@ func (c *KapuaClient) Logout(ctx context.Context) error {
 	return nil
 }
 
-// QuickAuthenticate performs a quick authentication using configured credentials
+// QuickAuthenticate performs a quick authentication using configured credentials.
+// It selects the authentication method based on the configured AuthMethod:
+//   - "apikey": authenticates with the configured API key
+//   - "password" or "" (default): authenticates with username and password
+//
+// An explicit error is returned for unrecognised AuthMethod values.
 func (c *KapuaClient) QuickAuthenticate(ctx context.Context) (*models.AccessToken, error) {
-	credentials := models.UsernamePasswordCredentials{
-		Username: c.config.Username,
-		Password: c.config.Password,
+	switch c.config.AuthMethod {
+	case "apikey":
+		if c.config.APIKey == "" {
+			return nil, fmt.Errorf("AuthMethod is \"apikey\" but no APIKey is configured")
+		}
+		return c.AuthenticateAPIKey(ctx, models.APIKeyCredentials{APIKey: c.config.APIKey})
+	case "password", "":
+		if c.config.Username == "" || c.config.Password == "" {
+			return nil, fmt.Errorf("AuthMethod is \"password\" but Username or Password is not configured")
+		}
+		return c.AuthenticateUser(ctx, models.UsernamePasswordCredentials{
+			Username: c.config.Username,
+			Password: c.config.Password,
+		})
+	default:
+		return nil, fmt.Errorf("unsupported AuthMethod %q: must be \"password\" or \"apikey\"", c.config.AuthMethod)
 	}
-
-	return c.AuthenticateUser(ctx, credentials)
 }

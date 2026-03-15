@@ -527,12 +527,15 @@ func TestQuickAuthenticateUsesConfig(t *testing.T) {
 		now.Add(time.Hour).Format(time.RFC3339), now.Add(2*time.Hour).Format(time.RFC3339))
 
 	client := &KapuaClient{
-		config:  &config.KapuaConfig{Username: "kapua-sys", Password: "kapua-password"},
+		config:  &config.KapuaConfig{Username: "kapua-sys", Password: "kapua-password", AuthMethod: "password"},
 		logger:  utils.NewDefaultLogger("test"),
 		baseURL: "http://example.com/v1",
 	}
 
 	client.httpClient = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if !strings.HasSuffix(req.URL.Path, "/authentication/user") {
+			t.Fatalf("expected /authentication/user, got %s", req.URL.Path)
+		}
 		body, _ := io.ReadAll(req.Body)
 		expectedBody := `{"username":"kapua-sys","password":"kapua-password"}`
 		if strings.TrimSpace(string(body)) != expectedBody {
@@ -551,5 +554,74 @@ func TestQuickAuthenticateUsesConfig(t *testing.T) {
 	}
 	if token.TokenID != "quick-token" {
 		t.Fatalf("expected quick token, got %s", token.TokenID)
+	}
+}
+
+func TestQuickAuthenticateUnknownMethod(t *testing.T) {
+	client := &KapuaClient{
+		config: &config.KapuaConfig{AuthMethod: "oauth"},
+		logger: utils.NewDefaultLogger("test"),
+	}
+
+	if _, err := client.QuickAuthenticate(context.Background()); err == nil || !strings.Contains(err.Error(), "unsupported AuthMethod") {
+		t.Fatalf("expected unsupported AuthMethod error, got %v", err)
+	}
+}
+
+func TestQuickAuthenticateMissingAPIKey(t *testing.T) {
+	client := &KapuaClient{
+		config: &config.KapuaConfig{AuthMethod: "apikey", APIKey: ""},
+		logger: utils.NewDefaultLogger("test"),
+	}
+
+	if _, err := client.QuickAuthenticate(context.Background()); err == nil || !strings.Contains(err.Error(), "no APIKey is configured") {
+		t.Fatalf("expected missing APIKey error, got %v", err)
+	}
+}
+
+func TestQuickAuthenticateMissingCredentials(t *testing.T) {
+	client := &KapuaClient{
+		config: &config.KapuaConfig{AuthMethod: "password", Username: "", Password: ""},
+		logger: utils.NewDefaultLogger("test"),
+	}
+
+	if _, err := client.QuickAuthenticate(context.Background()); err == nil || !strings.Contains(err.Error(), "Username or Password is not configured") {
+		t.Fatalf("expected missing credentials error, got %v", err)
+	}
+}
+
+func TestQuickAuthenticateUsesAPIKey(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	tokenJSON := fmt.Sprintf(`{"tokenId":"apikey-token","refreshToken":"refresh-token","expiresOn":"%s","refreshExpiresOn":"%s"}`,
+		now.Add(time.Hour).Format(time.RFC3339), now.Add(2*time.Hour).Format(time.RFC3339))
+
+	client := &KapuaClient{
+		config:  &config.KapuaConfig{APIKey: "my-secret-api-key", AuthMethod: "apikey"},
+		logger:  utils.NewDefaultLogger("test"),
+		baseURL: "http://example.com/v1",
+	}
+
+	client.httpClient = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		if !strings.HasSuffix(req.URL.Path, "/authentication/apikey") {
+			t.Fatalf("expected /authentication/apikey, got %s", req.URL.Path)
+		}
+		body, _ := io.ReadAll(req.Body)
+		expectedBody := `{"apiKey":"my-secret-api-key"}`
+		if strings.TrimSpace(string(body)) != expectedBody {
+			t.Fatalf("expected API key body, got %s", string(body))
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(tokenJSON)),
+			Header:     make(http.Header),
+		}, nil
+	})}
+
+	token, err := client.QuickAuthenticate(context.Background())
+	if err != nil {
+		t.Fatalf("QuickAuthenticate returned error: %v", err)
+	}
+	if token.TokenID != "apikey-token" {
+		t.Fatalf("expected apikey-token, got %s", token.TokenID)
 	}
 }
