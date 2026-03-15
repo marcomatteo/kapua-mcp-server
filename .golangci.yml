@@ -1,5 +1,5 @@
 linters:
-  default: none
+  disable-all: true
   enable:
     - errcheck
     - govet
