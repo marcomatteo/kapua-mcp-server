@@ -18,8 +18,8 @@ type ListDeviceLogsParams struct {
 	ClientID        string `json:"clientId,omitempty" jsonschema:"Filter device logs by clientId"`
 	Channel         string `json:"channel,omitempty" jsonschema:"Filter device logs by channel"`
 	StrictChannel   *bool  `json:"strictChannel,omitempty" jsonschema:"Restrict search to the provided channel only"`
-	StartDate       string `json:"startDate,omitempty" jsonschema:"Filter logs captured on or after this timestamp"`
-	EndDate         string `json:"endDate,omitempty" jsonschema:"Filter logs captured on or before this timestamp"`
+	StartDate       string `json:"startDate,omitempty" jsonschema:"Filter logs captured on or after this RFC3339 timestamp"`
+	EndDate         string `json:"endDate,omitempty" jsonschema:"Filter logs captured on or before this RFC3339 timestamp"`
 	LogPropertyName string `json:"logPropertyName,omitempty" jsonschema:"Filter logs by property name"`
 	LogPropertyType string `json:"logPropertyType,omitempty" jsonschema:"Filter logs by property type"`
 	LogPropertyMin  string `json:"logPropertyMin,omitempty" jsonschema:"Filter logs by minimum property value"`

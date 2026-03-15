@@ -106,87 +106,87 @@ func (s *Server) logStartup(transportName, endpoint string) {
 func registerKapuaTools(server *mcpsdk.Server, kapuaHandler *handlers.KapuaHandler) {
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-devices-list",
-		Description: "List Kapua IoT devices",
+		Description: "List Kapua IoT devices with optional filters for client ID, connection status (CONNECTED/DISCONNECTED/MISSING/NULL), and free-text search. Supports pagination via limit and offset. Returns device metadata including connection state, firmware, and OS info.",
 	}, kapuaHandler.HandleListDevices)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-events-list",
-		Description: "Read Kapua device events",
+		Description: "List lifecycle events for a Kapua device (requires deviceId). Filter by resource type, date range, and sort order. Returns timestamped events such as connection changes, command executions, and application updates.",
 	}, kapuaHandler.HandleListDeviceEvents)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-logs-list",
-		Description: "List Kapua device logs",
+		Description: "List device log entries stored in the Kapua datastore. Filter by clientId, channel, date range, and log property values. Returns structured log records with timestamps and metric payloads. Supports pagination.",
 	}, kapuaHandler.HandleListDeviceLogs)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-data-messages-list",
-		Description: "List Kapua data messages",
+		Description: "List telemetry data messages stored in the Kapua datastore. Filter by one or more clientIds, channel, and date range. Returns message payloads with channel, timestamp, and metric values. Supports pagination.",
 	}, kapuaHandler.HandleListDataMessages)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-configurations-read",
-		Description: "Read all configurations for a Kapua device (input: {id})",
+		Description: "Read all OSGi configuration components currently active on a Kapua device. Requires deviceId. Returns the full set of component configurations with their properties and values.",
 	}, kapuaHandler.HandleDeviceConfigurationsRead)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-snapshots-list",
-		Description: "List available snapshots for a Kapua device",
+		Description: "List available configuration snapshots for a Kapua device. Requires deviceId. Returns snapshot IDs that can be used with snapshot-configurations-read or snapshot-rollback.",
 	}, kapuaHandler.HandleDeviceSnapshotsList)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-snapshot-configurations-read",
-		Description: "Read component configurations stored in a device snapshot",
+		Description: "Read the component configurations stored in a specific device snapshot. Requires deviceId and snapshotId. Use kapua-device-snapshots-list first to discover available snapshot IDs.",
 	}, kapuaHandler.HandleDeviceSnapshotConfigurationsRead)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-snapshot-rollback",
-		Description: "Trigger a rollback of a device to a specific snapshot",
+		Description: "Trigger a configuration rollback on a Kapua device to a previously saved snapshot. Requires deviceId and snapshotId. This is a mutating operation that restores the device configuration to the snapshot state.",
 	}, kapuaHandler.HandleDeviceSnapshotRollback)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-read",
-		Description: "Read general inventory for a Kapua device",
+		Description: "Read the general software inventory for a Kapua device. Requires deviceId. Returns all inventory items (bundles, packages, containers) with name, version, and type.",
 	}, kapuaHandler.HandleDeviceInventoryRead)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-bundles-list",
-		Description: "List bundle inventory entries for a Kapua device",
+		Description: "List OSGi bundle inventory entries for a Kapua device. Requires deviceId. Returns bundle ID, name, version, status (ACTIVE/RESOLVED/INSTALLED/etc.), and signed flag.",
 	}, kapuaHandler.HandleDeviceInventoryBundles)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-bundle-start",
-		Description: "Request a bundle inventory start for a Kapua device",
+		Description: "Request an OSGi bundle to be started on a Kapua device. Requires deviceId and a bundle descriptor object. This is an asynchronous remote operation.",
 	}, kapuaHandler.HandleDeviceInventoryBundleStart)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-bundle-stop",
-		Description: "Request a bundle inventory stop for a Kapua device",
+		Description: "Request an OSGi bundle to be stopped on a Kapua device. Requires deviceId and a bundle descriptor object. This is an asynchronous remote operation.",
 	}, kapuaHandler.HandleDeviceInventoryBundleStop)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-containers-list",
-		Description: "List container inventory entries for a Kapua device",
+		Description: "List container inventory entries for a Kapua device. Requires deviceId. Returns container name, version, type, and state (ACTIVE/INSTALLED/UNINSTALLED/UNKNOWN).",
 	}, kapuaHandler.HandleDeviceInventoryContainers)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-container-start",
-		Description: "Request a container inventory start for a Kapua device",
+		Description: "Request a container to be started on a Kapua device. Requires deviceId and a container descriptor object. This is an asynchronous remote operation.",
 	}, kapuaHandler.HandleDeviceInventoryContainerStart)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-container-stop",
-		Description: "Request a container inventory stop for a Kapua device",
+		Description: "Request a container to be stopped on a Kapua device. Requires deviceId and a container descriptor object. This is an asynchronous remote operation.",
 	}, kapuaHandler.HandleDeviceInventoryContainerStop)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-system-packages-list",
-		Description: "List system packages inventory for a Kapua device",
+		Description: "List system packages installed on a Kapua device. Requires deviceId. Returns package name, version, and type from the device OS inventory.",
 	}, kapuaHandler.HandleDeviceInventorySystemPackages)
 
 	mcpsdk.AddTool(server, &mcpsdk.Tool{
 		Name:        "kapua-device-inventory-deployment-packages-list",
-		Description: "List deployment packages inventory for a Kapua device",
+		Description: "List deployment packages installed on a Kapua device. Requires deviceId. Returns deployment package metadata including name, version, and contained bundles.",
 	}, kapuaHandler.HandleDeviceInventoryDeploymentPackages)
 }
 

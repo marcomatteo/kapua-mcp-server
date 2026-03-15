@@ -12,7 +12,7 @@ import (
 
 // DeviceIDArg is a minimal object wrapper to satisfy MCP input schema (must be type object)
 type DeviceID struct {
-	DeviceID string `json:"deviceId" jsonschema:"The device ID"`
+	DeviceID string `json:"deviceId" jsonschema:"The Kapua device ID (required)"`
 }
 
 // HandleDeviceConfigurationsRead reads all configurations for a device by deviceId only
