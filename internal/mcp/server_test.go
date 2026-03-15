@@ -121,6 +121,16 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 		"kapua-device-inventory-container-stop",
 		"kapua-device-inventory-system-packages-list",
 		"kapua-device-inventory-deployment-packages-list",
+		"kapua-device-command-execute",
+		"kapua-device-assets-list",
+		"kapua-device-assets-read",
+		"kapua-device-assets-write",
+		"kapua-device-bundles-list",
+		"kapua-device-bundle-start",
+		"kapua-device-bundle-stop",
+		"kapua-device-configurations-write",
+		"kapua-device-component-configuration-read",
+		"kapua-device-component-configuration-write",
 	}
 
 	if got := featuresField.Len(); got < len(expectedTools) {
@@ -135,6 +145,46 @@ func TestRegisterKapuaHelpers(t *testing.T) {
 	for _, name := range expectedTools {
 		if _, ok := registered[name]; !ok {
 			t.Fatalf("expected %s tool to be registered", name)
+		}
+	}
+}
+
+func TestRegisterKapuaPrompts(t *testing.T) {
+	server := mcpsdk.NewServer(&mcpsdk.Implementation{Name: "test", Version: "dev"}, nil)
+
+	registerKapuaPrompts(server)
+
+	// Access the server's internal prompts registry via reflection.
+	promptsField := reflect.ValueOf(server).Elem().FieldByName("prompts")
+	if !promptsField.IsValid() {
+		t.Fatal("prompts field not found on MCP server")
+	}
+
+	promptsValue := reflect.NewAt(promptsField.Type(), unsafe.Pointer(promptsField.UnsafeAddr())).Elem()
+	featuresField := promptsValue.Elem().FieldByName("features")
+	if !featuresField.IsValid() {
+		t.Fatal("features map not found on prompts registry")
+	}
+
+	expectedPrompts := []string{
+		"diagnose-device",
+		"fleet-overview",
+		"security-audit",
+		"troubleshoot-connectivity",
+	}
+
+	if got := featuresField.Len(); got < len(expectedPrompts) {
+		t.Fatalf("expected at least %d prompts to be registered, got %d", len(expectedPrompts), got)
+	}
+
+	registered := make(map[string]struct{})
+	for _, key := range featuresField.MapKeys() {
+		registered[key.String()] = struct{}{}
+	}
+
+	for _, name := range expectedPrompts {
+		if _, ok := registered[name]; !ok {
+			t.Fatalf("expected %s prompt to be registered", name)
 		}
 	}
 }

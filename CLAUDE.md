@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`kapua-mcp-server` is a Model Context Protocol (MCP) server for Eclipse Kapua IoT device management, written in Go 1.23+. It exposes 24 MCP tools and 2 MCP resources that allow AI assistants to manage IoT devices, query telemetry, inspect configurations, and assess fleet health.
+`kapua-mcp-server` is a Model Context Protocol (MCP) server for Eclipse Kapua IoT device management, written in Go 1.23+. It exposes 27 MCP tools, 2 MCP resources, and 4 MCP prompts that allow AI assistants to manage IoT devices, query telemetry, inspect configurations, and assess fleet health.
 
 ## Commands
 
